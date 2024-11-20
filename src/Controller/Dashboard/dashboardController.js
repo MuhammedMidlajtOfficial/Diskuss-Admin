@@ -119,7 +119,7 @@ module.exports.getJobOverviewData = async (req, res) => {
     const months = [
       "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     ];
-    
+
     // Create an array to store the aggregated data
     const jobOverviewData = [];
 
@@ -132,6 +132,7 @@ module.exports.getJobOverviewData = async (req, res) => {
 
         // Aggregate counts per month for each year
         const count = await aggregateUserCountForMonth(year, month);
+        console.log(`Year: ${year}, Month: ${month}, Count: ${count}`); // Log the count for debugging
         monthlyData[year] = count; // Add the count for the respective year
       }
 
@@ -147,33 +148,51 @@ module.exports.getJobOverviewData = async (req, res) => {
 };
 
 async function aggregateUserCountForMonth(year, month) {
+  // Normalize the startDate to the first day of the month at midnight
+  const startDate = new Date(`${year}-${formatMonth(month)}-01T00:00:00.000Z`);
+  
+  // Normalize the endDate to the last day of the month at just before midnight of the next month
+  const nextMonth = new Date(startDate);
+  nextMonth.setMonth(startDate.getMonth() + 1); // Move to next month
+  const endDate = new Date(nextMonth);
+  endDate.setMilliseconds(endDate.getMilliseconds() - 1); // Subtract 1ms to get the last moment of the current month
+
+  // Log to verify
+  console.log(`Start Date for ${month} ${year}:`, startDate);
+  console.log(`End Date for ${month} ${year}:`, endDate);
+
   // Query individual users
   const individualCount = await individualUser.countDocuments({
-    createdDate: {
-      $gte: new Date(`${year}-${formatMonth(month)}-01`), // Format month to match MM format
-      $lt: new Date(`${year}-${formatMonth(month)}-01`).setMonth(new Date(`${year}-${formatMonth(month)}-01`).getMonth() + 1) // Get the next month
+    createdAt: {
+      $gte: startDate,
+      $lt: endDate
     }
   });
   
   // Query enterprise users
   const enterpriseCount = await enterpriseUser.countDocuments({
-    createdDate: {
-      $gte: new Date(`${year}-${formatMonth(month)}-01`),
-      $lt: new Date(`${year}-${formatMonth(month)}-01`).setMonth(new Date(`${year}-${formatMonth(month)}-01`).getMonth() + 1)
+    createdAt: {
+      $gte: startDate,
+      $lt: endDate
     }
   });
   
   // Query enterprise employees
   const enterpriseEmployeCount = await enterpriseEmployeModel.countDocuments({
-    createdDate: {
-      $gte: new Date(`${year}-${formatMonth(month)}-01`),
-      $lt: new Date(`${year}-${formatMonth(month)}-01`).setMonth(new Date(`${year}-${formatMonth(month)}-01`).getMonth() + 1)
+    createdAt: {
+      $gte: startDate,
+      $lt: endDate
     }
   });
-  
+
+  // console.log('individualCount:', individualCount);
+  // console.log('enterpriseCount:', enterpriseCount);
+  // console.log('enterpriseEmployeCount:', enterpriseEmployeCount);
+
   // Return the total count for that month and year
   return individualCount + enterpriseCount + enterpriseEmployeCount;
 }
+
 
 function formatMonth(month) {
   // Map month name to corresponding number in two-digit format (01-12)
