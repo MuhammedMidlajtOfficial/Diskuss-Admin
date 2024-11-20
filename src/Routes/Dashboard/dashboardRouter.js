@@ -1,0 +1,17 @@
+const { Router } = require('express');
+const controller = require('../../Controller/Dashboard/dashboardController')
+
+const router = Router();
+
+router.get('/getTotalCount',controller.getTotalCount)
+router.get('/getCountIndividualUsers',controller.getIndividualUsersCount)
+router.get('/getCountEnterpriseUsers',controller.getEnterpriseUsersCount)
+router.get('/getCountEnterpriseEmployee',controller.getEnterpriseEmployeeCount)
+router.get('/getTotalCards',controller.getTotalCards)
+router.get('/getNewUsers',controller.getNewUsers)
+router.get('/getSubscribedUsers',controller.getSubscribedUsers)
+router.get('/getFailedPayment',controller.getFailedPayment)
+router.get('/getActiveUsers',controller.getActiveUsers)
+router.get('/getJobOverviewData',controller.getJobOverviewData)
+
+module.exports = router;
