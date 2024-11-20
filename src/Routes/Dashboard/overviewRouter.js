@@ -14,6 +14,6 @@ router.get('/getFailedPayment',controller.getFailedPayment)
 router.get('/getActiveUsers',controller.getActiveUsers)
 router.get('/getJobOverviewData',controller.getJobOverviewData)
 router.get('/getTodaysActiveUsers/:date', controller.getTodaysActiveUsers);
-router.get('/getPlanMembers/:date', controller.getSubscribedUsers);
+router.get('/getPlanMembers/:date', controller.getPlanMembers);
 
 module.exports = router;

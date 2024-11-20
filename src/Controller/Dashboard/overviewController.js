@@ -3,6 +3,7 @@ const enterpriseEmployeModel = require("../../models/enterpriseEmploye.model");
 const enterpriseEmployeCard = require("../../models/enterpriseEmployeCard.model");
 const enterpriseUser = require("../../models/enterpriseUser");
 const { individualUser } = require("../../models/individualUser");
+const subscriptionPlanModel = require("../../models/subscriptionPlan.model");
 const userSubscriptionModel = require("../../models/userSubscription.model");
 
 
@@ -262,7 +263,7 @@ module.exports.getTodaysActiveUsers = async (req, res) => {
   }
 };
 
-module.exports.getSubscribedUsers = async (req, res) => {
+module.exports.getPlanMembers = async (req, res) => {
   try {
     // Step 1: Get the date from the URL parameter
     const { date } = req.params;
@@ -287,28 +288,51 @@ module.exports.getSubscribedUsers = async (req, res) => {
     console.log('Start of day:', startOfDay);
     console.log('End of day:', endOfDay);
 
+    const plansAvailable = await subscriptionPlanModel.find();  // Fetch all available plans
+
     // Step 4: Fetch users created on the given date, use createdAt field
-    const individualUsers = await individualUser.find({
+    const subscribedMembers = await userSubscriptionModel.find({
       createdAt: { $gte: startOfDay, $lt: endOfDay }
     });
 
-    const enterpriseUsers = await enterpriseUser.find({
-      createdAt: { $gte: startOfDay, $lt: endOfDay }
+    // Step 5: Map planIds to plan names for easy reference
+    const planMap = plansAvailable.reduce((acc, plan) => {
+      acc[plan._id.toString()] = plan.name;  // Assuming `name` is the plan name and `_id` is the plan ID
+      return acc;
+    }, {});
+
+    // Step 6: Calculate the count of users for each plan
+    const planUsage = {};
+
+    // Count users for each plan by plan name
+    subscribedMembers.forEach((member) => {
+      const planId = member.planId.toString();  // Assuming `planId` is the field storing the plan reference
+      const planName = planMap[planId] || 'Unknown Plan';  // Map planId to planName
+      if (planUsage[planName]) {
+        planUsage[planName]++;
+      } else {
+        planUsage[planName] = 1;
+      }
     });
 
-    const enterpriseEmployees = await enterpriseEmployeModel.find({
-      createdAt: { $gte: startOfDay, $lt: endOfDay }
+    // Step 7: Calculate the percentage for each plan
+    const totalMembers = subscribedMembers.length;
+    const planPercentage = plansAvailable.map((plan) => {
+      const planName = plan.name;
+      const planCount = planUsage[planName] || 0;  // Ensure the plan is included even if no users are subscribed
+      const planPercent = totalMembers ? ((planCount / totalMembers) * 100).toFixed(2) : 0;
+      return {
+        planName: planName,
+        count: planCount,
+        percentage: planPercent,
+      };
     });
 
-    // Step 5: Combine all the results into one array
-    const activeUsers = [...individualUsers, ...enterpriseUsers, ...enterpriseEmployees];
+    // Step 8: Send the response with the counts and percentages
+    return res.status(200).json({ planPercentage });
 
-    // Step 6: Send the response with the count of active users
-    return res.status(200).json({ activeUsers });
-    
   } catch (error) {
     console.error('Error while fetching active users:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
-
