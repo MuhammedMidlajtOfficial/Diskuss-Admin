@@ -193,7 +193,6 @@ async function aggregateUserCountForMonth(year, month) {
   return individualCount + enterpriseCount + enterpriseEmployeCount;
 }
 
-
 function formatMonth(month) {
   // Map month name to corresponding number in two-digit format (01-12)
   const monthMap = {
@@ -212,3 +211,104 @@ function formatMonth(month) {
   };
   return monthMap[month];
 }
+
+module.exports.getTodaysActiveUsers = async (req, res) => {
+  try {
+    // Step 1: Get the date from the URL parameter
+    const { date } = req.params;
+
+    // Step 2: Validate the date format (yyyy-mm-dd)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      return res.status(400).json({ message: 'Invalid date format. Use yyyy-mm-dd.' });
+    }
+
+    // Step 3: Convert the date to start of the day and end of the day
+    const startOfDay = new Date(date);
+    const endOfDay = new Date(date);
+    
+    if (isNaN(startOfDay) || isNaN(endOfDay)) {
+      return res.status(400).json({ message: 'Invalid date provided.' });
+    }
+
+    startOfDay.setHours(0, 0, 0, 0);  // Set to 00:00:00 of that day
+    endOfDay.setHours(23, 59, 59, 999);  // Set to 23:59:59.999 of that day
+
+    console.log('Start of day:', startOfDay);
+    console.log('End of day:', endOfDay);
+
+    // Step 4: Fetch users created on the given date, use createdAt field
+    const individualUsers = await individualUser.find({
+      createdAt: { $gte: startOfDay, $lt: endOfDay }
+    });
+
+    const enterpriseUsers = await enterpriseUser.find({
+      createdAt: { $gte: startOfDay, $lt: endOfDay }
+    });
+
+    const enterpriseEmployees = await enterpriseEmployeModel.find({
+      createdAt: { $gte: startOfDay, $lt: endOfDay }
+    });
+
+    // Step 5: Combine all the results into one array
+    const activeUsers = [...individualUsers, ...enterpriseUsers, ...enterpriseEmployees];
+
+    // Step 6: Send the response with the count of active users
+    return res.status(200).json({ activeUsers });
+    
+  } catch (error) {
+    console.error('Error while fetching active users:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports.getSubscribedUsers = async (req, res) => {
+  try {
+    // Step 1: Get the date from the URL parameter
+    const { date } = req.params;
+
+    // Step 2: Validate the date format (yyyy-mm-dd)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      return res.status(400).json({ message: 'Invalid date format. Use yyyy-mm-dd.' });
+    }
+
+    // Step 3: Convert the date to start of the day and end of the day
+    const startOfDay = new Date(date);
+    const endOfDay = new Date(date);
+    
+    if (isNaN(startOfDay) || isNaN(endOfDay)) {
+      return res.status(400).json({ message: 'Invalid date provided.' });
+    }
+
+    startOfDay.setHours(0, 0, 0, 0);  // Set to 00:00:00 of that day
+    endOfDay.setHours(23, 59, 59, 999);  // Set to 23:59:59.999 of that day
+
+    console.log('Start of day:', startOfDay);
+    console.log('End of day:', endOfDay);
+
+    // Step 4: Fetch users created on the given date, use createdAt field
+    const individualUsers = await individualUser.find({
+      createdAt: { $gte: startOfDay, $lt: endOfDay }
+    });
+
+    const enterpriseUsers = await enterpriseUser.find({
+      createdAt: { $gte: startOfDay, $lt: endOfDay }
+    });
+
+    const enterpriseEmployees = await enterpriseEmployeModel.find({
+      createdAt: { $gte: startOfDay, $lt: endOfDay }
+    });
+
+    // Step 5: Combine all the results into one array
+    const activeUsers = [...individualUsers, ...enterpriseUsers, ...enterpriseEmployees];
+
+    // Step 6: Send the response with the count of active users
+    return res.status(200).json({ activeUsers });
+    
+  } catch (error) {
+    console.error('Error while fetching active users:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+

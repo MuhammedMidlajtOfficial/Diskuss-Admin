@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const controller = require('../../Controller/Dashboard/dashboardController')
+const controller = require('../../Controller/Dashboard/overviewController')
 
 const router = Router();
 
@@ -13,5 +13,7 @@ router.get('/getSubscribedUsers',controller.getSubscribedUsers)
 router.get('/getFailedPayment',controller.getFailedPayment)
 router.get('/getActiveUsers',controller.getActiveUsers)
 router.get('/getJobOverviewData',controller.getJobOverviewData)
+router.get('/getTodaysActiveUsers/:date', controller.getTodaysActiveUsers);
+router.get('/getPlanMembers/:date', controller.getSubscribedUsers);
 
 module.exports = router;

@@ -1,12 +1,12 @@
 const express = require('express');
-const dashboardRouter = require("./Dashboard/dashboardRouter")
+const overviewRouter = require("./Dashboard/overviewRouter")
 
 const router = express.Router();
 
 const defaultRoutes = [
   {
     path: "/dashboard",
-    route: dashboardRouter,
+    route: overviewRouter,
   },
 ];
 
