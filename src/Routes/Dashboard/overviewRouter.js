@@ -15,5 +15,7 @@ router.get('/getActiveUsers',controller.getActiveUsers)
 router.get('/getJobOverviewData',controller.getJobOverviewData)
 router.get('/getTodaysActiveUsers/:date', controller.getTodaysActiveUsers);
 router.get('/getPlanMembers/:date', controller.getPlanMembers);
+router.get('/getUserPercentage', controller.getUserPercentage);
+router.get('/getRecentRegister/:user', controller.getRecentRegister);
 
 module.exports = router;

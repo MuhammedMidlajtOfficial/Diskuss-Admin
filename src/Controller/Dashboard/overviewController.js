@@ -133,7 +133,7 @@ module.exports.getJobOverviewData = async (req, res) => {
 
         // Aggregate counts per month for each year
         const count = await aggregateUserCountForMonth(year, month);
-        console.log(`Year: ${year}, Month: ${month}, Count: ${count}`); // Log the count for debugging
+        // console.log(`Year: ${year}, Month: ${month}, Count: ${count}`); // Log the count for debugging
         monthlyData[year] = count; // Add the count for the respective year
       }
 
@@ -159,8 +159,8 @@ async function aggregateUserCountForMonth(year, month) {
   endDate.setMilliseconds(endDate.getMilliseconds() - 1); // Subtract 1ms to get the last moment of the current month
 
   // Log to verify
-  console.log(`Start Date for ${month} ${year}:`, startDate);
-  console.log(`End Date for ${month} ${year}:`, endDate);
+  // console.log(`Start Date for ${month} ${year}:`, startDate);
+  // console.log(`End Date for ${month} ${year}:`, endDate);
 
   // Query individual users
   const individualCount = await individualUser.countDocuments({
@@ -235,8 +235,8 @@ module.exports.getTodaysActiveUsers = async (req, res) => {
     startOfDay.setHours(0, 0, 0, 0);  // Set to 00:00:00 of that day
     endOfDay.setHours(23, 59, 59, 999);  // Set to 23:59:59.999 of that day
 
-    console.log('Start of day:', startOfDay);
-    console.log('End of day:', endOfDay);
+    // console.log('Start of day:', startOfDay);
+    // console.log('End of day:', endOfDay);
 
     // Step 4: Fetch users created on the given date, use createdAt field
     const individualUsers = await individualUser.find({
@@ -285,8 +285,8 @@ module.exports.getPlanMembers = async (req, res) => {
     startOfDay.setHours(0, 0, 0, 0);  // Set to 00:00:00 of that day
     endOfDay.setHours(23, 59, 59, 999);  // Set to 23:59:59.999 of that day
 
-    console.log('Start of day:', startOfDay);
-    console.log('End of day:', endOfDay);
+    // console.log('Start of day:', startOfDay);
+    // console.log('End of day:', endOfDay);
 
     const plansAvailable = await subscriptionPlanModel.find();  // Fetch all available plans
 
@@ -334,5 +334,173 @@ module.exports.getPlanMembers = async (req, res) => {
   } catch (error) {
     console.error('Error while fetching active users:', error);
     return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports.getUserPercentage = async (req, res) => {
+  try {
+    // Get current date
+    const now = new Date();
+
+    // Get start and end of the current month
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfCurrentMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1, 0, 23, 59, 59, 999
+    );
+
+    // console.log('startOfCurrentMonth', startOfCurrentMonth);
+    // console.log('endOfCurrentMonth', endOfCurrentMonth);
+
+    // Get end of the previous month
+    const endOfPreviousMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(), 0, 23, 59, 59, 999
+    );
+
+    // Step 1: Fetch users from this month
+    const thisMonthUsers = [
+      ...(await individualUser.find({
+        createdAt: { $gte: startOfCurrentMonth, $lte: endOfCurrentMonth },
+      })),
+      ...(await enterpriseUser.find({
+        createdAt: { $gte: startOfCurrentMonth, $lte: endOfCurrentMonth },
+      })),
+      ...(await enterpriseEmployeModel.find({
+        createdAt: { $gte: startOfCurrentMonth, $lte: endOfCurrentMonth },
+      })),
+    ];
+
+    // console.log('thisMonthUsers:', thisMonthUsers.length);
+
+    // Fetch users from the previous months
+    const individualUsers = await individualUser.find({
+      createdAt: { $lt: endOfPreviousMonth },
+    });
+
+    const enterpriseUsers = await enterpriseUser.find({
+      createdAt: { $lt: endOfPreviousMonth },
+    });
+
+    const enterpriseEmployees = await enterpriseEmployeModel.find({
+      createdAt: { $lt: endOfPreviousMonth },
+    });
+
+    const previousMonthsUsers = [
+      ...individualUsers,
+      ...enterpriseUsers,
+      ...enterpriseEmployees,
+    ];
+
+    // Calculate the start and end of the previous month
+    const endOflastMonth = new Date(now.getFullYear(), now.getMonth(), 0); // Last day of the last month
+    const startOflastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1); // First day of the last month
+
+    // Fetch users from the last month (from the start to the end of the last month)
+    const individualUsersLastMonth = await individualUser.find({
+      createdAt: { $gte: startOflastMonth, $lt: endOflastMonth },
+    });
+
+    const enterpriseUsersLastMonth = await enterpriseUser.find({
+      createdAt: { $gte: startOflastMonth, $lt: endOflastMonth },
+    });
+
+    const enterpriseEmployeesLastMonth = await enterpriseEmployeModel.find({
+      createdAt: { $gte: startOflastMonth, $lt: endOflastMonth },
+    });
+
+    // Combine all users from the last month
+    const lastMonthsUsers = [
+      ...individualUsersLastMonth,
+      ...enterpriseUsersLastMonth,
+      ...enterpriseEmployeesLastMonth,
+    ];
+
+    // Total users
+    const totalUsers = thisMonthUsers.length + previousMonthsUsers.length;
+
+    // Step 3: Calculate percentages
+    const thisMonthPercentage = (thisMonthUsers.length / totalUsers) * 100;
+    const previousMonthsPercentage =
+      (previousMonthsUsers.length / totalUsers) * 100;
+
+    // Step 4: Calculate growth/loss percentage
+    let growthLoss = 0;
+    if (thisMonthUsers.length + previousMonthsUsers.length > 0) {
+      growthLoss =
+        (thisMonthUsers.length /
+          (thisMonthUsers.length + lastMonthsUsers.length)) *
+        100;
+    }
+
+    // Step 5: Return the result
+    return res.status(200).json({ 
+      userData: {
+        totalUsers,
+        thisMonthUsers: thisMonthUsers.length,
+        previousMonthsUsers: previousMonthsUsers.length,
+        thisMonthPercentage: thisMonthPercentage.toFixed(2),
+        previousMonthsPercentage: previousMonthsPercentage.toFixed(2),
+        growthLoss: growthLoss.toFixed(2), // Positive for growth, negative for loss
+      }
+    });
+  } catch (error) {
+    console.error('Error while calculating user percentages:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports.getRecentRegister = async (req, res) => {
+  try {
+    const { user } = req.params
+    let enterpriseUsers = [];
+    let enterpriseEmployees = [];
+    let individualUsers = [];
+   
+    if(user == 'enterpriseUsers'){
+      // Fetch enterprise users, sorted by createdAt in descending order
+      enterpriseUsers = await enterpriseUser
+        .find()
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean();
+      console.log('Latest Enterprise Users:', enterpriseUsers.length);
+    } else if(user == 'enterpriseEmployees'){ 
+      // Fetch enterprise employees, sorted by createdAt in descending order
+      enterpriseEmployees = await enterpriseEmployeModel
+        .find()
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean();
+      console.log('Latest Enterprise Employees:', enterpriseEmployees.length);
+    }else if(user == 'individualUsers'){
+      // Fetch individual users, sorted by createdAt in descending order
+      individualUsers = await individualUser
+      .find()
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
+      console.log('Latest Individual Users:', individualUsers.length);
+    }
+
+    // Combine all users, sort by createdAt, and take the latest 10
+    const allUsers = [...individualUsers, ...enterpriseUsers, ...enterpriseEmployees]
+      .map(user => {
+        const createdAt = user.createdAt ? new Date(user.createdAt) : null;
+        const timePassed = createdAt
+          ? `${Math.floor((new Date() - createdAt) / (1000 * 60 * 60 * 24))} days ago`
+          : 'Date not available';
+
+        return {
+          ...user,
+          timePassed,
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+
+      return res.status(200).json({ recentUsers: allUsers });
+  } catch (error) {
+    console.error('Error fetching latest users:', error.message);
+    return res.status(500).json({ message: 'Server error. Could not fetch latest users.' });
   }
 };
