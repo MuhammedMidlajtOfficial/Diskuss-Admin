@@ -17,5 +17,6 @@ router.get('/getTodaysActiveUsers/:date', controller.getTodaysActiveUsers);
 router.get('/getPlanMembers/:date', controller.getPlanMembers);
 router.get('/getUserPercentage', controller.getUserPercentage);
 router.get('/getRecentRegister/:user', controller.getRecentRegister);
+router.get('/getMostlyUsedPlans', controller.getMostlyUsedPlans);
 
 module.exports = router;

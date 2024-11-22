@@ -1,6 +1,6 @@
 const card = require("../../models/card");
-const enterpriseEmployeModel = require("../../models/enterpriseEmploye.model");
 const enterpriseEmployeCard = require("../../models/enterpriseEmployeCard.model");
+const enterpriseEmployeModel = require("../../models/enterpriseEmploye.model");
 const enterpriseUser = require("../../models/enterpriseUser");
 const { individualUser } = require("../../models/individualUser");
 const subscriptionPlanModel = require("../../models/subscriptionPlan.model");
@@ -464,7 +464,7 @@ module.exports.getRecentRegister = async (req, res) => {
         .sort({ createdAt: -1 })
         .limit(10)
         .lean();
-      console.log('Latest Enterprise Users:', enterpriseUsers.length);
+      // console.log('Latest Enterprise Users:', enterpriseUsers.length);
     } else if(user == 'enterpriseEmployees'){ 
       // Fetch enterprise employees, sorted by createdAt in descending order
       enterpriseEmployees = await enterpriseEmployeModel
@@ -472,7 +472,7 @@ module.exports.getRecentRegister = async (req, res) => {
         .sort({ createdAt: -1 })
         .limit(10)
         .lean();
-      console.log('Latest Enterprise Employees:', enterpriseEmployees.length);
+      // console.log('Latest Enterprise Employees:', enterpriseEmployees.length);
     }else if(user == 'individualUsers'){
       // Fetch individual users, sorted by createdAt in descending order
       individualUsers = await individualUser
@@ -480,17 +480,33 @@ module.exports.getRecentRegister = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(10)
       .lean();
-      console.log('Latest Individual Users:', individualUsers.length);
+      // console.log('Latest Individual Users:', individualUsers.length);
     }
 
-    // Combine all users, sort by createdAt, and take the latest 10
+    // Combine all users, sort by createdAt, and add timePassed field
     const allUsers = [...individualUsers, ...enterpriseUsers, ...enterpriseEmployees]
       .map(user => {
         const createdAt = user.createdAt ? new Date(user.createdAt) : null;
-        const timePassed = createdAt
-          ? `${Math.floor((new Date() - createdAt) / (1000 * 60 * 60 * 24))} days ago`
-          : 'Date not available';
 
+        let timePassed = 'Date not available';
+        if (createdAt) {
+          const now = new Date();
+          const diffMs = now - createdAt;
+
+          if (diffMs < 1000 * 60) {
+            // Less than a minute ago
+            timePassed = `${Math.floor(diffMs / 1000)} seconds ago`;
+          } else if (diffMs < 1000 * 60 * 60) {
+            // Less than an hour ago
+            timePassed = `${Math.floor(diffMs / (1000 * 60))} minutes ago`;
+          } else if (diffMs < 1000 * 60 * 60 * 24) {
+            // Less than a day ago
+            timePassed = `${Math.floor(diffMs / (1000 * 60 * 60))} hours ago`;
+          } else {
+            // More than a day ago
+            timePassed = `${Math.floor(diffMs / (1000 * 60 * 60 * 24))} days ago`;
+          }
+        }
         return {
           ...user,
           timePassed,
@@ -502,5 +518,66 @@ module.exports.getRecentRegister = async (req, res) => {
   } catch (error) {
     console.error('Error fetching latest users:', error.message);
     return res.status(500).json({ message: 'Server error. Could not fetch latest users.' });
+  }
+};
+
+module.exports.getMostlyUsedPlans = async (req, res) => {
+  try {
+    // Step 1: Aggregate subscriptions to count usage frequency and calculate the most used plan per user
+    const userPlanUsage = await userSubscriptionModel.aggregate([
+      {
+        $group: {
+          _id: { userId: "$userId", planId: "$planId" }, // Group by userId and planId
+          planUsageCount: { $sum: 1 }, // Count the number of times each plan is used by the user
+        },
+      },
+      {
+        $group: {
+          _id: "$_id.userId", // Group by userId
+          plans: { $push: { planId: "$_id.planId", count: "$planUsageCount" } }, // Collect plan details with usage count
+          planCount: { $sum: "$planUsageCount" }, // Total number of subscriptions by the user
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          planCount: 1,
+          mostUsedPlan: { $arrayElemAt: [{ $sortArray: { input: "$plans", sortBy: { count: -1 } } }, 0] }, // Get the most used plan
+        },
+      },
+      {
+        $sort: { planCount: -1 }, // Sort by total subscription count
+      },
+      {
+        $limit: 10, // Get the top 10 users
+      },
+    ]);
+
+    // Step 2: Fetch user details and populate the most used plan details
+    const detailedUserPlanUsage = await Promise.all(
+      userPlanUsage.map(async (usage) => {
+        // Fetch user details from all models
+        const userDetails =
+          (await enterpriseUser.findById(usage._id).select("username email image ").lean()) ||
+          (await enterpriseEmployeModel.findById(usage._id).select("username email image ").lean()) ||
+          (await individualUser.findById(usage._id).select("username email image ").lean()) ||
+          { name: "Unknown User", email: "N/A" };
+
+        // Fetch plan details for the most used plan
+        const planDetails = await subscriptionPlanModel.findById(usage.mostUsedPlan.planId).select('name').lean();
+
+        return {
+          ...userDetails,
+          planCount: usage.planCount,
+          plansUsed: planDetails || { name: "Unknown Plan", description: "N/A" }, // Populate with plan details or fallback
+        };
+      })
+    );
+
+    // Step 3: Return the response
+    return res.status(200).json({ topUsers: detailedUserPlanUsage });
+  } catch (error) {
+    console.error("Error while fetching mostly used plans:", error.message); // Log error message for better clarity
+    return res.status(500).json({ message: "Server error" });
   }
 };
