@@ -23,4 +23,35 @@ const SubscriptionPlanSchema = new mongoose.Schema({
 //   next();
 // });
 
+
+
+const getActiveSubscriptions = async (req, res) => {
+  try {
+    const activeSubscriptions = await ManageSubscription.find({ subscriptionStatus: 'active' })
+      .populate('planId', 'name price features duration')  // Populate subscription plan details
+      .exec();
+
+    res.status(200).json(activeSubscriptions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching active subscriptions", error: error });
+  }
+};
+
+
+
+const getInactiveSubscriptions = async (req, res) => {
+  try {
+    const inactiveSubscriptions = await ManageSubscription.find({ subscriptionStatus: 'inactive' })
+      .populate('planId', 'name price features duration')  // Populate subscription plan details
+      .exec();
+
+    res.status(200).json(inactiveSubscriptions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching inactive subscriptions", error: error });
+  }
+};
+
+
 module.exports = mongoose.model("SubscriptionPlan", SubscriptionPlanSchema);
