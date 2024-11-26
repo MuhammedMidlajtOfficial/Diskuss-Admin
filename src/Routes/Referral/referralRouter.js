@@ -10,4 +10,5 @@ router.get("/details", ReferralController.getAllReferralDetails);
 
 router.get("/top-referrer", ReferralController.getTopReferrers);
 
+
 module.exports = router;

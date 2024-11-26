@@ -1,4 +1,5 @@
 const referralService = require("../../services/Referral/referral.service");
+
 const mongoose = require("mongoose");
 const { Referral } = require("../../models/referral.model");
 const { individualUser } = require("../../models/individualUser");
@@ -131,6 +132,7 @@ const getTopReferrers = async (req, res) => {
         res.status(200).json({ topReferrers: topReferrerData });
     } catch (error) {
         console.error("Error fetching top referrers:", error);
+
         res.status(500).json({ error: error.message });
     }
 };
@@ -139,4 +141,5 @@ module.exports = {
     getReferralDetailsWithUserMatch,
     getAllReferralDetails,
     getTopReferrers,
+
 };

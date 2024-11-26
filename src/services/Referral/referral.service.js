@@ -21,4 +21,5 @@ const getUserDetails = async (userId) => {
 
 module.exports = {
     getUserDetails,
+
 };
