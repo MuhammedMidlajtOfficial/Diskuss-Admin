@@ -1,4 +1,4 @@
-const { uploadImageToS3 } = require("../../Services/AWS/s3Bucket");
+const {uploadImageToS3}= require("../../Services/AWS/s3Bucket");
 const enterpriseEmployeModel = require("../../models/enterpriseEmploye.model");
 const enterpriseUser = require("../../models/enterpriseUser");
 const {individualUser} = require("../../models/individualUser");

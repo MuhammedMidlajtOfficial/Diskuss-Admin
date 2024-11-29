@@ -11,7 +11,7 @@ const s3Client = new S3Client({
 });
 
 // Upload function for S3
-async function uploadImageToS3(imageBuffer, fileName) {
+module.exports.uploadImageToS3 = async (imageBuffer, fileName) =>{
   const params = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: `profile-images/${fileName}`, // Store in a "profile-images" folder
@@ -32,5 +32,3 @@ async function uploadImageToS3(imageBuffer, fileName) {
     throw error;
   }
 }
-
-module.exports.uploadImageToS3 = uploadImageToS3;

@@ -1,4 +1,4 @@
-// models/Group.js
+
 const mongoose = require("mongoose");
 
 const fcmSchema = new mongoose.Schema({
