@@ -1,9 +1,10 @@
-const { Router } = require('express');
-const controller = require('../../Controller/Fcm/fcmController')
+const express = require("express");
+const { handleLogin, handleLogout, sendNotification } = require("../../Controller/Fcm/fcmController");
 
-const router = Router();
+const router = express.Router();
 
-router.get('/getAllFcmId',controller.getAllFcmId)
-router.post('/postFcmId',controller.postFcmId)
+router.post("/login", handleLogin);
+router.post("/logout", handleLogout);
+router.post("/send-notification", sendNotification);
 
 module.exports = router;

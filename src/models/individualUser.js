@@ -80,4 +80,4 @@ const individualUserSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-module.exports.individualUser = mongoose.model("User", individualUserSchema);
+module.exports = mongoose.model("User", individualUserSchema);
