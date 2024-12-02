@@ -93,7 +93,7 @@ exports.handleLogout = async (req, res) => {
   }
 };
 
-//Send Notification
+// Send Notification
 exports.sendNotification = async (req, res) => {
   const { title, body, imageUrl, topic } = req.body;
 
@@ -105,9 +105,17 @@ exports.sendNotification = async (req, res) => {
     // Fetch users from the FCM collection based on topic
     const users = await fcmCollection.find({ topic });
 
+    console.log("Users fetched from database:", users);
+
     if (!users || users.length === 0) {
       return res.status(404).send("No users found for the selected topic.");
     }
+
+    // Subscribe users to the topic
+    const fcmTokens = users.map((user) => user.fcmId);
+    await admin.messaging().subscribeToTopic(fcmTokens, `/topics/${topic}`);
+
+    console.log("Subscribed users to topic:", `/topics/${topic}`);
 
     // Prepare the message for FCM
     const message = {
@@ -116,13 +124,16 @@ exports.sendNotification = async (req, res) => {
         body: body,
       },
       data: {
-        imageUrl: imageUrl || "", // Optional image URL for the notification
+        imageUrl: imageUrl || "",
       },
-      topic: topic, // Send to the topic
+      topic: `/topics/${topic}`,
     };
 
+    console.log("Message payload:", message);
+
     // Send the notification
-    await admin.messaging().send(message);
+    const response = await admin.messaging().send(message);
+    console.log("Notification response:", response);
 
     res.status(200).send(`Notification sent to topic: ${topic}`);
   } catch (error) {
@@ -130,4 +141,5 @@ exports.sendNotification = async (req, res) => {
     res.status(500).send("Failed to send notification.");
   }
 };
+
 
