@@ -19,6 +19,11 @@ const serviceAccount = {
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
+console.log({
+  type: process.env.FIREBASE_TYPE,
+  client_email: process.env.FIREBASE_CLIENT_EMAIL,
+  private_key: process.env.FIREBASE_PRIVATE_KEY ? 'exists' : 'missing',
+});
 console.log("Firebase Admin Initialized Successfully");
 } catch (error) {
   console.error("Error initializing Firebase Admin:", error);
