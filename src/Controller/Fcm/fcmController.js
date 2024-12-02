@@ -10,13 +10,9 @@ const admin = require ("../../firebaseConfig")
 exports.handleLogin = async (req, res) => {
   const { fcmId, userId, userType } = req.body;
 
-  const generalTopic = "general";
   let topic = "unregistered";
 
   try {
-    // Subscribe to the general topic
-    await subscribeToTopic(fcmId, generalTopic);
-
     if (!userId || !userType) {
       await fcmCollection.updateOne(
         { fcmId },
@@ -24,7 +20,7 @@ exports.handleLogin = async (req, res) => {
         { upsert: true }
       );
       await subscribeToTopic(fcmId, topic);
-      return res.status(200).send("User added to 'unregistered' and 'general' topics.");
+      return res.status(200).send("User added to 'unregistered' topic.");
     }
 
     // Determine specific topics based on userType and isSubscribed
@@ -56,7 +52,7 @@ exports.handleLogin = async (req, res) => {
     );
     await subscribeToTopic(fcmId, topic);
 
-    res.status(200).send(`User added to '${topic}' and 'general' topics.`);
+    res.status(200).send(`User added to '${topic}' topic.`);
   } catch (error) {
     console.error("Error handling FCM login:", error.message);
     res.status(500).send("Failed to process FCM login.");
@@ -110,12 +106,6 @@ exports.sendNotification = async (req, res) => {
     if (!users || users.length === 0) {
       return res.status(404).send("No users found for the selected topic.");
     }
-
-    // Subscribe users to the topic
-    const fcmTokens = users.map((user) => user.fcmId);
-    await admin.messaging().subscribeToTopic(fcmTokens, `/topics/${topic}`);
-
-    console.log("Subscribed users to topic:", `/topics/${topic}`);
 
     // Prepare the message for FCM
     const message = {
