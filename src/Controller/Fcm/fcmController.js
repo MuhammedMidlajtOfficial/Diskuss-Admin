@@ -6,6 +6,41 @@ const enterpriseEmploye = require ("../../models/enterpriseEmploye.model")
 const admin = require ("../../firebaseConfig")
 
 
+// Handle Subscription Notification
+exports.handleSubscription = async (req, res) => {
+  const { fcmId, subscription } = req.body;
+
+  if (!fcmId) {
+    return res.status(400).send("FCM ID is required.");
+  }
+
+  try {
+    // Check if subscription is active
+    if (subscription) {
+      const message = {
+        notification: {
+          title: "Plan Activated",
+          body: "Your plan has been successfully activated! Enjoy the premium features.",
+        },
+        token: fcmId, // Send to specific FCM ID
+      };
+
+      // Send the notification
+      const response = await admin.messaging().send(message);
+      console.log("Subscription notification sent:", response);
+
+      res.status(200).send("Subscription notification sent successfully.");
+    } else {
+      res.status(400).send("Subscription is not active.");
+    }
+  } catch (error) {
+    console.error("Error sending subscription notification:", error.message);
+    res.status(500).send("Failed to send subscription notification.");
+  }
+};
+
+
+
 //Handle Login
 exports.handleLogin = async (req, res) => {
   const { fcmId, userId, userType } = req.body;
