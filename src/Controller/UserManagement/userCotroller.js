@@ -1,7 +1,7 @@
 const {uploadImageToS3}= require("../../services/AWS/s3Bucket");
 const enterpriseEmployeModel = require("../../models/enterpriseEmploye.model");
 const enterpriseUser = require("../../models/enterpriseUser");
-const {individualUser} = require("../../models/individualUser");
+const individualUser= require("../../models/individualUser");
 const userSubscriptionModel = require("../../models/userSubscription.model");
 const bcrypt = require('bcrypt');
 
@@ -163,3 +163,186 @@ module.exports.addIndividualUser = async (req,res) =>{
     return res.status(500).json({ message: 'Server error' });
   }
 }
+
+module.exports.addEnterpriseUser = async (req, res) => {
+  try {
+    const {
+      companyName,
+      industryType,
+      email,
+      image,
+      phnNumber,
+      address,
+      website,
+      aboutUs,
+      whatsappNo,
+      facebookLink,
+      instagramLink,
+      twitterLink,
+    } = req.body;
+    const passwordRaw = req.body.password;
+
+    // Check for missing fields
+    if (!companyName || !industryType || !email || !passwordRaw) {
+      return res.status(400).json({ message: "Company name, industry type, email, and password are required" });
+    }
+
+    // Check if email exists in the enterpriseUser collection
+    const isEmailExist = await enterpriseUser.findOne({ email }).exec();
+    if (isEmailExist) {
+      return res.status(409).json({ message: "An enterprise user with this email address already exists." });
+    }
+
+    // Check if email exists in the enterpriseEmployeModel collection
+    const isEmpEmailExist = await enterpriseEmployeModel.findOne({ email }).exec();
+    if (isEmpEmailExist) {
+      return res.status(409).json({ message: "This email address is already associated with an enterprise employee." });
+    }
+
+    let imageUrl;
+
+    // Upload image to S3 if a new image is provided
+    if (image) {
+      const imageBuffer = Buffer.from(image.replace(/^data:image\/\w+;base64,/, ""), 'base64');
+      const fileName = `-profile.jpg`; // Unique file name based on company name
+      try {
+        const uploadResult = await uploadImageToS3(imageBuffer, fileName);
+        imageUrl = uploadResult.Location; // URL of the uploaded image
+      } catch (uploadError) {
+        console.log("Error uploading image to S3:", uploadError);
+        return res.status(500).json({ message: "Failed to upload image", error: uploadError });
+      }
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(passwordRaw, 10);
+
+    // Create a new enterprise user
+    const newEnterpriseUser = await enterpriseUser.create({
+      companyName,
+      industryType,
+      email,
+      password: hashedPassword,
+      image: imageUrl,
+      phnNumber,
+      address,
+      website,
+      aboutUs,
+      socialMedia: {
+        whatsappNo,
+        facebookLink,
+        instagramLink,
+        twitterLink,
+      },
+    });
+
+    console.log(newEnterpriseUser);
+    return res.status(201).json({ message: "Enterprise user created", user: newEnterpriseUser });
+  } catch (error) {
+    console.error('Error creating enterprise user:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports.addEnterpriseEmployee = async (req, res) => {
+  try {
+    const {
+      enterpriseId,
+      username,
+      email,
+      passwordRaw,
+      businessName,
+      empName,
+      designation,
+      mobile,
+      location,
+      services,
+      image,
+      position,
+      color,
+      website,
+    } = req.body;
+
+    // Check for missing fields
+    if (!email || !passwordRaw || !enterpriseId || !businessName || !empName || !designation || !mobile || !location || !services || !image || !position || !color || !website) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Check if user email exists
+    const isEmailExist = await enterpriseEmployeModel.findOne({ email }).exec();
+    const isEmailExistInEnterpriseUser = await enterpriseUser.findOne({ email }).exec();
+    if (isEmailExist || isEmailExistInEnterpriseUser) {
+      return res.status(409).json({ message: "A user with this email address already exists. Please use another email" });
+    }
+
+    // Check if Enterprise ID exists
+    const isEnterpriseIDExist = await enterpriseUser.findOne({ _id: enterpriseId }).exec();
+    if (!isEnterpriseIDExist) {
+      return res.status(409).json({ message: "Enterprise user not found" });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(passwordRaw, 10);
+
+    // Handle image URL (upload to S3 if necessary)
+    let imageUrl = image;
+    if (image) {
+      const imageBuffer = Buffer.from(image.replace(/^data:image\/\w+;base64,/, ""), 'base64');
+      const fileName = `${username}-profile.jpg`; // Unique file name based on username
+      try {
+        const uploadResult = await uploadImageToS3(imageBuffer, fileName);
+        imageUrl = uploadResult.Location; // URL of the uploaded image
+      } catch (uploadError) {
+        console.log("Error uploading image to S3:", uploadError);
+        return res.status(500).json({ message: "Failed to upload image", error: uploadError });
+      }
+    }
+
+    // Create the enterprise employee document
+    const newEnterpriseEmployee = await enterpriseEmployeModel.create({
+      username,
+      email,
+      password: hashedPassword,
+    });
+
+    if (!newEnterpriseEmployee) {
+      return res.status(500).json({ message: "Failed to create enterprise employee" });
+    }
+
+    // Create new card
+    const newCard = new enterpriseEmployeCardModel({
+      userId: newEnterpriseEmployee._id,
+      businessName,
+      email,
+      empName,
+      designation,
+      mobile,
+      location,
+      services,
+      image: imageUrl,
+      position,
+      color,
+      website,
+      enterpriseId,
+    });
+
+    const cardResult = await newCard.save();
+    if (!cardResult) {
+      return res.status(500).json({ message: "Failed to create employee card" });
+    }
+
+    // Add the card ID to the enterprise user document
+    await enterpriseUser.updateOne(
+      { _id: enterpriseId },
+      {
+        $push: { empCards: cardResult._id }, // Assuming `empCards` is an array field in the EnterpriseUser model
+      }
+    );
+
+    // Respond with success
+    res.status(201).json({ message: "Enterprise employee added successfully with card", user: newEnterpriseEmployee, card: cardResult });
+  } catch (error) {
+    console.error('Error adding enterprise employee:', error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};

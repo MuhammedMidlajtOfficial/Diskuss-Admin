@@ -2,7 +2,7 @@ const card = require("../../models/card");
 const enterpriseEmployeCard = require("../../models/enterpriseEmployeCard.model");
 const enterpriseEmployeModel = require("../../models/enterpriseEmploye.model");
 const enterpriseUser = require("../../models/enterpriseUser");
-const { individualUser } = require("../../models/individualUser");
+const individualUser = require("../../models/individualUser");
 const subscriptionPlanModel = require("../../models/subscriptionPlan.model");
 const userSubscriptionModel = require("../../models/userSubscription.model");
 

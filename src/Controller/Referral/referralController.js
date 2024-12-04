@@ -2,7 +2,7 @@ const referralService = require("../../services/Referral/referral.service");
 
 const mongoose = require("mongoose");
 const { Referral } = require("../../models/referral.model");
-const { individualUser } = require("../../models/individualUser");
+const individualUser = require("../../models/individualUser");
 
 // Function to get referral details by userId
 const getReferralDetailsWithUserMatch = async (req, res) => {
