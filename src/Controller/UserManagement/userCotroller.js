@@ -346,3 +346,46 @@ module.exports.addEnterpriseEmployee = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
+module.exports.changeUserStatus = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Check if the user exists in the EnterpriseUser collection
+    const enterpriseUserExist = await enterpriseUser.findById(userId);
+    const enterpriseEmployeeExist = await enterpriseEmployeModel.findById(userId);
+    const individualUserExist = await individualUser.findById(userId);
+
+    if (enterpriseUserExist) {
+      // Toggle status for enterpriseUser
+      if (enterpriseUserExist.status === "active") {
+        await enterpriseUser.updateOne({ _id: userId }, { status: "inactive" });
+      } else if (enterpriseUserExist.status === "inactive") {
+        await enterpriseUser.updateOne({ _id: userId }, { status: "active" });
+      }
+      return res.json({ message: `Enterprise user status updated` });
+    } else if (enterpriseEmployeeExist) {
+      // Toggle status for enterpriseEmployee
+      if (enterpriseEmployeeExist.status === "active") {
+        await enterpriseEmployeModel.updateOne({ _id: userId }, { status: "inactive" });
+      } else if (enterpriseEmployeeExist.status === "inactive") {
+        await enterpriseEmployeModel.updateOne({ _id: userId }, { status: "active" });
+      }
+      return res.json({ message: `Enterprise employee status updated` });
+    } else if (individualUserExist) {
+      // Toggle status for individualUser
+      if (individualUserExist.status === "active") {
+        await individualUser.updateOne({ _id: userId }, { status: "inactive" });
+      } else if (individualUserExist.status === "inactive") {
+        await individualUser.updateOne({ _id: userId }, { status: "active" });
+      }
+      return res.json({ message: `Individual user status updated` });
+    } else {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
