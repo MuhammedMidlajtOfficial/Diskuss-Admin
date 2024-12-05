@@ -71,6 +71,10 @@ const EnterpriseEmployeeSchema = new mongoose.Schema({
         default : ''
       },
     },
+    status:{
+      type:String,
+      default : 'active'
+    },
     meetings: [
       {
         type: String,
