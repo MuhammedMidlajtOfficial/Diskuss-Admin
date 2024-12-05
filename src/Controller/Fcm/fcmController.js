@@ -40,6 +40,38 @@ exports.handleSubscription = async (req, res) => {
 };
 
 
+exports.sendMessageNotification = async (req, res) => {
+  const { receiverId, senderName, content, chatId } = req.body;
+
+  try {
+    const fcmData = await fcmCollection.findOne({ userId: receiverId });
+
+    if (!fcmData || !fcmData.fcmId) {
+      return res.status(404).json({ error: "FCM ID not found for receiver." });
+    }
+    console.log("fcm Data",fcmData);
+
+    const message = {
+      notification: {
+        title: `New message from ${senderName}`,
+        body: content,
+      },
+      data: {
+        chatId,
+      },
+      token: fcmData.fcmId,
+    };
+
+    const response = await admin.messaging().send(message);
+    console.log("Message notification sent:", response);
+
+    res.status(200).json({ message: "Notification sent successfully." });
+  } catch (error) {
+    console.error("Error sending notification:", error.message);
+    res.status(500).json({ error: "Failed to send notification." });
+  }
+};
+
 
 //Handle Login
 exports.handleLogin = async (req, res) => {
