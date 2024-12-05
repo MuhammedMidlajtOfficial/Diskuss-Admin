@@ -72,6 +72,49 @@ exports.sendMessageNotification = async (req, res) => {
   }
 };
 
+exports.sendMeetingNotification = async (req, res) => {
+  const { userIds, notification } = req.body;
+
+  try {
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ error: "No userIds provided." });
+    }
+
+    const notifications = await Promise.all(
+      userIds.map(async (userId) => {
+        const fcmData = await fcmCollection.findOne({ userId });
+
+        if (!fcmData || !fcmData.fcmId) {
+          console.error(`FCM ID not found for userId: ${userId}`);
+          return null; // Skip if no FCM ID
+        }
+
+        const message = {
+          notification: {
+            title: notification.title,
+            body: notification.body,
+          },
+          token: fcmData.fcmId,
+        };
+
+        try {
+          const response = await admin.messaging().send(message);
+          console.log(`Notification sent to userId: ${userId}`, response);
+          return response;
+        } catch (sendError) {
+          console.error(`Error sending notification to userId: ${userId}`, sendError.message);
+          return null;
+        }
+      })
+    );
+
+    res.status(200).json({ message: "Notifications sent.", details: notifications });
+  } catch (error) {
+    console.error("Error sending notifications:", error.message);
+    res.status(500).json({ error: "Failed to send notifications." });
+  }
+};
+
 
 //Handle Login
 exports.handleLogin = async (req, res) => {
