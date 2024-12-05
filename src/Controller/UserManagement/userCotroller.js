@@ -363,7 +363,8 @@ module.exports.changeUserStatus = async (req, res) => {
       } else if (enterpriseUserExist.status === "inactive") {
         await enterpriseUser.updateOne({ _id: userId }, { status: "active" });
       }
-      return res.json({ message: `Enterprise user status updated` });
+      console.log('Enterprise user status updated');
+      return res.status(200).json({ message: `Enterprise user status updated` });
     } else if (enterpriseEmployeeExist) {
       // Toggle status for enterpriseEmployee
       if (enterpriseEmployeeExist.status === "active") {
@@ -371,7 +372,8 @@ module.exports.changeUserStatus = async (req, res) => {
       } else if (enterpriseEmployeeExist.status === "inactive") {
         await enterpriseEmployeModel.updateOne({ _id: userId }, { status: "active" });
       }
-      return res.json({ message: `Enterprise employee status updated` });
+      console.log('Enterprise employee status updated');
+      return res.status(200).json({ message: `Enterprise employee status updated` });
     } else if (individualUserExist) {
       // Toggle status for individualUser
       if (individualUserExist.status === "active") {
@@ -379,10 +381,42 @@ module.exports.changeUserStatus = async (req, res) => {
       } else if (individualUserExist.status === "inactive") {
         await individualUser.updateOne({ _id: userId }, { status: "active" });
       }
-      return res.json({ message: `Individual user status updated` });
+      console.log('Individual user status updated');
+      return res.status(200).json({ message: `Individual user status updated` });
     } else {
       return res.status(404).json({ message: 'User not found' });
     }
+
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports.getUserById = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Check if the user exists in the EnterpriseUser collection
+    const enterpriseUserExist = await enterpriseUser.findById(userId);
+    if (enterpriseUserExist) {
+      return res.status(200).json({ userData: enterpriseUserExist, userType: 'EnterpriseUser' });
+    }
+
+    // Check if the user exists in the EnterpriseEmployee collection
+    const enterpriseEmployeeExist = await enterpriseEmployeModel.findById(userId);
+    if (enterpriseEmployeeExist) {
+      return res.status(200).json({ userData: enterpriseEmployeeExist, userType: 'EnterpriseEmployee' });
+    }
+
+    // Check if the user exists in the IndividualUser collection
+    const individualUserExist = await individualUser.findById(userId);
+    if (individualUserExist) {
+      return res.status(200).json({ userData: individualUserExist, userType: 'IndividualUser' });
+    }
+
+    // If no user is found in any collection
+    return res.status(404).json({ message: 'User not found' });
 
   } catch (error) {
     console.error('Error fetching users:', error);
