@@ -39,6 +39,39 @@ exports.handleSubscription = async (req, res) => {
   }
 };
 
+exports.sendMeetingAcceptanceNotification = async (req, res) => {
+  const { userId, notification } = req.body;
+
+  if (!userId) {
+      return res.status(400).json({ error: "userId is required." });
+  }
+
+  if (!notification || !notification.title || !notification.body) {
+      return res.status(400).json({ error: "Notification with title and body is required." });
+  }
+
+  try {
+      const fcmData = await fcmCollection.findOne({ userId });
+
+      if (!fcmData || !fcmData.fcmId) {
+          return res.status(404).json({ error: "FCM ID not found for the user." });
+      }
+
+      const message = {
+          notification,
+          token: fcmData.fcmId,
+      };
+
+      const response = await admin.messaging().send(message);
+      console.log(`Meeting acceptance notification sent to userId: ${userId}`, response);
+
+      res.status(200).json({ message: "Meeting acceptance notification sent successfully.", response });
+  } catch (error) {
+      console.error("Error sending meeting acceptance notification:", error.message);
+      res.status(500).json({ error: "Failed to send meeting acceptance notification." });
+  }
+};
+
 
 exports.sendMessageNotification = async (req, res) => {
   const { receiverId, senderName, content, chatId } = req.body;
