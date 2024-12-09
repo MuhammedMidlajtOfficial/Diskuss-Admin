@@ -38,7 +38,7 @@ module.exports.getAllUsers = async (req, res) => {
           .populate('planId') // Populate plan details
           .lean();
         // console.log('subscription--', subscription);
-        user.subscriptionPlan = subscription ? subscription.planId.name : null;
+        user.subscriptionPlan = subscription ? subscription?.planId?.name : null;
       }
       return users;
     };
@@ -400,19 +400,20 @@ module.exports.getUserById = async (req, res) => {
     // Check if the user exists in the EnterpriseUser collection
     const enterpriseUserExist = await enterpriseUser.findById(userId);
     if (enterpriseUserExist) {
-      return res.status(200).json({ userData: enterpriseUserExist, userType: 'EnterpriseUser' });
+      return res.status(200).json({ userData: enterpriseUserExist, userType: 'enterprise' });
     }
 
     // Check if the user exists in the EnterpriseEmployee collection
     const enterpriseEmployeeExist = await enterpriseEmployeModel.findById(userId);
     if (enterpriseEmployeeExist) {
-      return res.status(200).json({ userData: enterpriseEmployeeExist, userType: 'EnterpriseEmployee' });
+      return res.status(200).json({ userData: enterpriseEmployeeExist, userType: 'enterpriseEmp' });
     }
 
     // Check if the user exists in the IndividualUser collection
     const individualUserExist = await individualUser.findById(userId);
     if (individualUserExist) {
-      return res.status(200).json({ userData: individualUserExist, userType: 'IndividualUser' });
+      const subscription = await userSubscriptionModel.findOne({ userId: individualUserExist._id }).select("planId").populate("planId").exec()
+      return res.status(200).json({ userData: individualUserExist, userType: 'individual', subscription });
     }
 
     // If no user is found in any collection
