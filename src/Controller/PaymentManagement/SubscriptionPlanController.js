@@ -116,6 +116,7 @@ const createSubscriptionPlan = async (req,res)=>{
 
     // Check if required fields are provided
     if (!name || !price || ! duration || ! type) {
+
       return res.status(400).json({ message: "Name, price and duration are required." });
     }
 
