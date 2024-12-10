@@ -1,4 +1,4 @@
-const {uploadImageToS3}= require("../../services/AWS/s3Bucket");
+const {uploadImageToS3, deleteImageFromS3}= require("../../services/AWS/s3Bucket");
 const enterpriseEmployeModel = require("../../models/enterpriseEmploye.model");
 const enterpriseUser = require("../../models/enterpriseUser");
 const individualUser= require("../../models/individualUser");
@@ -422,5 +422,99 @@ module.exports.getUserById = async (req, res) => {
   } catch (error) {
     console.error('Error fetching users:', error);
     return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports.updateProfile = async (req, res) => {
+  try {
+    const { userType, ...requestData } = req.body;
+    const { id: userId } = req.params;
+
+    // Validate required fields
+    if (!userType || !userId) {
+      return res.status(400).json({ message: "userType and userId are required" });
+    }
+
+    // Define allowed fields for each user type
+    const allowedFields = {
+      individual: ['username', 'email', 'image', 'role', 'name', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink'],
+      enterprise: ['email', 'image', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink', 'companyName', 'industryType', 'aboutUs'],
+      enterpriseEmp: ['username', 'email', 'image', 'role', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink']
+    };
+
+    // Filter `requestData` to only include allowed fields for the specific `userType`
+    const updateData = Object.fromEntries(
+      Object.entries(requestData).filter(([key]) => allowedFields[userType]?.includes(key))
+    );
+
+    if (!updateData || Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "No valid fields to update" });
+    }
+
+    // Set model and user type name based on `userType`
+    let model, userTypeName;
+    switch (userType) {
+      case 'individual':
+        model = individualUser;
+        userTypeName = "Individual user";
+        break;
+      case 'enterprise':
+        model = enterpriseUser;
+        userTypeName = "Enterprise user";
+        break;
+      case 'enterpriseEmp':
+        model = enterpriseEmployeModel;
+        userTypeName = "Enterprise employee";
+        break;
+      default:
+        return res.status(400).json({ message: "Invalid userType provided" });
+    }
+
+    // Check if the user exists
+    const userExist = await model.findById(userId);
+    if (!userExist) {
+      return res.status(404).json({ message: `${userTypeName} not found` });
+    }
+
+    // Handle image upload if provided
+    if (requestData.image) {
+      // If the user already has an image, delete it from S3
+      if (userExist.image) {
+        await deleteImageFromS3(userExist.image); // Delete the old image from S3
+      }
+
+      // Convert the image to a buffer (Base64 to binary)
+      const imageBuffer = Buffer.from(requestData.image.replace(/^data:image\/\w+;base64,/, ""), 'base64');
+      const fileName = `${userId}-profile.jpg`; // Create a unique file name based on user ID
+
+      // Upload the new image to S3
+      try {
+        const uploadResult = await uploadImageToS3(imageBuffer, fileName);
+        console.log('Upload Result:', uploadResult);  // Check the result from S3
+        if (uploadResult && uploadResult.Location) {
+          updateData.image = uploadResult.Location; // URL of the uploaded image
+        } else {
+          console.error('Image upload failed, no location returned');
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+      }
+    } else {
+      console.log('No image data provided');
+    }
+
+    console.log('updateData.image:', updateData.image); // Log to check if image URL is assigned
+
+
+    // Update the user data with the filtered and updated fields
+    const updateResult = await model.updateOne({ _id: userId }, { $set: updateData });
+    return res.status(200).json({
+      message: updateResult.modifiedCount > 0
+        ? `${userTypeName} updated successfully`
+        : "No changes made"
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return res.status(500).json({ message: 'An error occurred while updating the user' });
   }
 };

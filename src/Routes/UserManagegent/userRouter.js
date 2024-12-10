@@ -7,6 +7,8 @@ router.get('/getAllUser/:filter',controller.getAllUsers)
 router.get('/changeUserStatus/:id',controller.changeUserStatus)
 router.get('/getUserById/:id',controller.getUserById)
 
+router.patch('/updateProfile/:id', controller.updateProfile);
+
 router.post('/addIndividualUser',controller.addIndividualUser)
 router.post('/addEnterpriseUser',controller.addEnterpriseUser)
 router.post('/addEnterpriseEmployee',controller.addEnterpriseEmployee)
