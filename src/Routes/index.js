@@ -3,6 +3,7 @@ const overviewRouter = require("./Dashboard/overviewRouter");
 const userRouter = require("./UserManagegent/userRouter");
 const referralRouter = require("./Referral/referralRouter");
 const fcmRouter = require("./FcmRouter/fcmRouter");
+const SubscriptionPlan = require("./Subscription/subscription");
 
 const router = express.Router();
 
@@ -24,6 +25,10 @@ const defaultRoutes = [
         path: "/fcm",
         route: fcmRouter,
     },
+    {
+        path:"/subscription",
+        route:SubscriptionPlan,
+    }
 
 ];
 
