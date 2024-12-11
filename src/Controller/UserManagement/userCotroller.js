@@ -4,6 +4,7 @@ const enterpriseUser = require("../../models/enterpriseUser");
 const individualUser= require("../../models/individualUser");
 const userSubscriptionModel = require("../../models/userSubscription.model");
 const bcrypt = require('bcrypt');
+const moment = require("moment");
 
 module.exports.getAllUsers = async (req, res) => {
   try {
@@ -516,5 +517,38 @@ module.exports.updateProfile = async (req, res) => {
   } catch (error) {
     console.error('Error updating user:', error);
     return res.status(500).json({ message: 'An error occurred while updating the user' });
+  }
+};
+
+module.exports.getEnterpriseUserCount = async (req, res) => {
+  try {
+    // Get the start and end of the current month
+    const startOfMonth = moment().startOf('month').toDate();
+    const endOfMonth = moment().endOf('month').toDate();
+
+    // Count all enterprise users
+    const EnterpriseUserCount = await enterpriseUser.countDocuments();
+
+    // Find unique subscribed user IDs with 'active' status
+    const uniqueSubscribedUsers = await userSubscriptionModel.distinct('userId', { status: 'active' });
+
+    // Count users who are both enterprise users and active subscribers
+    const activeEnterpriseUsersCount = await enterpriseUser.countDocuments({
+      _id: { $in: uniqueSubscribedUsers }
+    });
+
+    // Count enterprise users created this month
+    const thisMonthEnterpriseUsersCount = await enterpriseUser.countDocuments({
+      createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+    });
+
+    return res.status(200).json({
+      EnterpriseUserCount,
+      activeEnterpriseUsersCount,
+      thisMonthEnterpriseUsersCount
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 };
