@@ -7,19 +7,22 @@ const EmployeeRoleController = {
   createRole: async (req, res) => {
     try {
       const { roleName, isActive } = req.body;
-      if(!roleName || !isActive){
-        res.status(401).json({ message: "All fields must be present"})
+      if (!roleName || isActive === undefined) {
+        return res.status(400).json({ message: "All fields must be present" });
       }
-      if((await EmployeeRole.find({roleName}))){
-        res.status(402).json({ message: "Role alredy exists"})
+      const existingRole = await EmployeeRole.findOne({ roleName });
+      if (existingRole) {
+        return res.status(409).json({ message: "Role already exists" });
       }
       const role = new EmployeeRole({ roleName, isActive });
       await role.save();
-      res.status(201).json({ message: "Role created successfully", role });
+  
+      return res.status(201).json({ message: "Role created successfully", role });
     } catch (error) {
-      res.status(500).json({ message: "Error creating role", error: error.message });
+      return res.status(500).json({ message: "Error creating role", error: error.message });
     }
   },
+  
 
   // Getting All Roles
   getRoles: async (req, res) => {
@@ -82,8 +85,8 @@ const EmployeeCategoryController = {
   createCategory: async (req, res) => {
     try {
       const { categoryName, isActive, roles } = req.body;
-      if(!categoryName || !isActive){
-        res.status(404).json({ message: "Please fill all field"})
+      if(!categoryName){
+        res.status(404).json({ message: "Category Name is Needed"})
       }
       const category = new EmployeeCategory({ categoryName, isActive, roles });
       await category.save();
