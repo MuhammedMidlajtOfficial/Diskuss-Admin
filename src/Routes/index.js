@@ -5,6 +5,7 @@ const referralRouter = require("./Referral/referralRouter");
 const fcmRouter = require("./FcmRouter/fcmRouter");
 const SubscriptionPlan = require("./Subscription/subscription");
 const PaymentHistory = require("./Subscription/userSubscription");
+const EmployeeRouter = require("./Employee/employeeRouter")
 
 const router = express.Router();
 
@@ -33,6 +34,10 @@ const defaultRoutes = [
     {
         path:"/payment",
         route:PaymentHistory,
+    },
+    {
+        path: "/employee",
+        route:EmployeeRouter
     }
 
 
