@@ -30,18 +30,18 @@ async function getInvoices(req, res) {
 
     // Mapping through the invoices and ensuring all required fields are included
     const formattedInvoices = invoices.map((invoice) => ({
-      invoiceNumber: invoice._id, // MongoDB ObjectId as the invoice number
-      userId: invoice.userId?._id || "unknown", // User ID from UserSubscription model
-      userName: invoice.userId?.username || "unknown", // User name
-      userEmail: invoice.userId?.email || "unknown", // User email
-      planId: invoice.planId?._id || "unknown", // Plan ID from UserSubscription model
-      planName: invoice.planId?.name || "unknown", // Plan name
-      razorpayOrderId: invoice.razorpayOrderId || "unknown", // RazorPay OrderId from UserSubscription model
+      invoiceNumber: invoice._id, 
+      userId: invoice.userId?._id || "unknown", 
+      userName: invoice.userId?.username || "unknown", // This should be static 
+      userEmail: invoice.userId?.email || "unknown", // This should be static 
+      planId: invoice.planId?._id || "unknown", 
+      planName: invoice.planId?.name || "unknown", 
+      razorpayOrderId: invoice.razorpayOrderId || "unknown", 
       amount: invoice.amount || "unknown", // Default value if amount is not in the model
-      paymentMethod: invoice.payment?.[0]?.method || "unknown", // Payment method from payment array
+      paymentMethod: invoice.payment?.[0] || "unknown", // Payment method from payment array (unknown type)
       paymentDate: invoice.createdAt || "unknown", // CreatedAt from timestamps
-      subscriptionStartDate: invoice.startDate || "unknown", // Subscription start date
-      subscriptionEndDate: invoice.endDate || "unknown", // Subscription end date
+      subscriptionStartDate: invoice.startDate || "unknown", 
+      subscriptionEndDate: invoice.endDate || "unknown", 
       status: invoice.paymentStatus || "success", // Default status if not available in the model
     }));
 
