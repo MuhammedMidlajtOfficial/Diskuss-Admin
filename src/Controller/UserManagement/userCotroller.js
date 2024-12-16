@@ -1,9 +1,10 @@
-const {uploadImageToS3}= require("../../services/AWS/s3Bucket");
+const {uploadImageToS3, deleteImageFromS3}= require("../../services/AWS/s3Bucket");
 const enterpriseEmployeModel = require("../../models/enterpriseEmploye.model");
 const enterpriseUser = require("../../models/enterpriseUser");
 const individualUser= require("../../models/individualUser");
 const userSubscriptionModel = require("../../models/userSubscription.model");
 const bcrypt = require('bcrypt');
+const moment = require("moment");
 
 module.exports.getAllUsers = async (req, res) => {
   try {
@@ -38,7 +39,7 @@ module.exports.getAllUsers = async (req, res) => {
           .populate('planId') // Populate plan details
           .lean();
         // console.log('subscription--', subscription);
-        user.subscriptionPlan = subscription ? subscription.planId.name : null;
+        user.subscriptionPlan = subscription ? subscription?.planId?.name : null;
       }
       return users;
     };
@@ -400,19 +401,20 @@ module.exports.getUserById = async (req, res) => {
     // Check if the user exists in the EnterpriseUser collection
     const enterpriseUserExist = await enterpriseUser.findById(userId);
     if (enterpriseUserExist) {
-      return res.status(200).json({ userData: enterpriseUserExist, userType: 'EnterpriseUser' });
+      return res.status(200).json({ userData: enterpriseUserExist, userType: 'enterprise' });
     }
 
     // Check if the user exists in the EnterpriseEmployee collection
     const enterpriseEmployeeExist = await enterpriseEmployeModel.findById(userId);
     if (enterpriseEmployeeExist) {
-      return res.status(200).json({ userData: enterpriseEmployeeExist, userType: 'EnterpriseEmployee' });
+      return res.status(200).json({ userData: enterpriseEmployeeExist, userType: 'enterpriseEmp' });
     }
 
     // Check if the user exists in the IndividualUser collection
     const individualUserExist = await individualUser.findById(userId);
     if (individualUserExist) {
-      return res.status(200).json({ userData: individualUserExist, userType: 'IndividualUser' });
+      const subscription = await userSubscriptionModel.findOne({ userId: individualUserExist._id }).select("planId").populate("planId").exec()
+      return res.status(200).json({ userData: individualUserExist, userType: 'individual', subscription });
     }
 
     // If no user is found in any collection
@@ -420,6 +422,193 @@ module.exports.getUserById = async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching users:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports.updateProfile = async (req, res) => {
+  try {
+    const { userType, ...requestData } = req.body;
+    const { id: userId } = req.params;
+
+    // Validate required fields
+    if (!userType || !userId) {
+      return res.status(400).json({ message: "userType and userId are required" });
+    }
+
+    // Define allowed fields for each user type
+    const allowedFields = {
+      individual: ['username', 'email', 'image', 'role', 'name', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink'],
+      enterprise: ['email', 'image', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink', 'companyName', 'industryType', 'aboutUs'],
+      enterpriseEmp: ['username', 'email', 'image', 'role', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink']
+    };
+
+    // Filter `requestData` to only include allowed fields for the specific `userType`
+    const updateData = Object.fromEntries(
+      Object.entries(requestData).filter(([key]) => allowedFields[userType]?.includes(key))
+    );
+
+    if (!updateData || Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "No valid fields to update" });
+    }
+
+    // Set model and user type name based on `userType`
+    let model, userTypeName;
+    switch (userType) {
+      case 'individual':
+        model = individualUser;
+        userTypeName = "Individual user";
+        break;
+      case 'enterprise':
+        model = enterpriseUser;
+        userTypeName = "Enterprise user";
+        break;
+      case 'enterpriseEmp':
+        model = enterpriseEmployeModel;
+        userTypeName = "Enterprise employee";
+        break;
+      default:
+        return res.status(400).json({ message: "Invalid userType provided" });
+    }
+
+    // Check if the user exists
+    const userExist = await model.findById(userId);
+    if (!userExist) {
+      return res.status(404).json({ message: `${userTypeName} not found` });
+    }
+
+    // Handle image upload if provided
+    if (requestData.image) {
+      // If the user already has an image, delete it from S3
+      if (userExist.image) {
+        await deleteImageFromS3(userExist.image); // Delete the old image from S3
+      }
+
+      // Convert the image to a buffer (Base64 to binary)
+      const imageBuffer = Buffer.from(requestData.image.replace(/^data:image\/\w+;base64,/, ""), 'base64');
+      const fileName = `${userId}-profile.jpg`; // Create a unique file name based on user ID
+
+      // Upload the new image to S3
+      try {
+        const uploadResult = await uploadImageToS3(imageBuffer, fileName);
+        console.log('Upload Result:', uploadResult);  // Check the result from S3
+        if (uploadResult && uploadResult.Location) {
+          updateData.image = uploadResult.Location; // URL of the uploaded image
+        } else {
+          console.error('Image upload failed, no location returned');
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+      }
+    } else {
+      console.log('No image data provided');
+    }
+
+    console.log('updateData.image:', updateData.image); // Log to check if image URL is assigned
+
+
+    // Update the user data with the filtered and updated fields
+    const updateResult = await model.updateOne({ _id: userId }, { $set: updateData });
+    return res.status(200).json({
+      message: updateResult.modifiedCount > 0
+        ? `${userTypeName} updated successfully`
+        : "No changes made"
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return res.status(500).json({ message: 'An error occurred while updating the user' });
+  }
+};
+
+module.exports.getEnterpriseUserCount = async (req, res) => {
+  try {
+    // Get the start and end of the current month
+    const startOfMonth = moment().startOf('month').toDate();
+    const endOfMonth = moment().endOf('month').toDate();
+
+    // Count all enterprise users
+    const EnterpriseUserCount = await enterpriseUser.countDocuments();
+
+    // Find unique subscribed user IDs with 'active' status
+    const uniqueSubscribedUsers = await userSubscriptionModel.distinct('userId', { status: 'active' });
+
+    // Count users who are both enterprise users and active subscribers
+    const activeEnterpriseUsersCount = await enterpriseUser.countDocuments({
+      _id: { $in: uniqueSubscribedUsers }
+    });
+
+    // Count enterprise users created this month
+    const thisMonthEnterpriseUsersCount = await enterpriseUser.countDocuments({
+      createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+    });
+
+    return res.status(200).json({
+      EnterpriseUserCount,
+      activeEnterpriseUsersCount,
+      thisMonthEnterpriseUsersCount
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports.getEnterpriseUser = async (req, res) => {
+  try {
+    // Destructure query parameters with defaults
+    const {
+      page = 1,
+      pageSize: pageSizeQuery,
+      sortField = 'username',
+      sortOrder = 'asc',
+      search = '',
+    } = req.query;
+
+    // Parse pageSize and page as integers with default values
+    const pageSize = parseInt(pageSizeQuery, 10) || 12; // Default pageSize is 12
+    const skip = (parseInt(page, 10) - 1) * pageSize; // Calculate skip for pagination
+    const sort = { [sortField]: sortOrder === 'asc' ? 1 : -1 }; // Sort order
+    const searchRegex = new RegExp(search, 'i'); // Case-insensitive regex for search
+
+    // Fetch matching enterprise users with pagination and sorting, and include employee count
+    const enterpriseUsers = await enterpriseUser
+      .find({
+        $or: [
+          { username: { $regex: searchRegex } },
+          { email: { $regex: searchRegex } },
+          { name: { $regex: searchRegex } },
+          // Add more searchable fields here if needed
+        ],
+      })
+      .sort(sort)
+      .skip(skip)
+      .limit(pageSize)
+      .lean() // Use lean for better performance
+      .populate({
+        path: 'empId', // Populate the empId references
+        select: '_id', // Only select the _id of employees
+      })
+      .select('companyName email image phnNumber')
+
+    // Add employee counts to each user
+    const usersWithEmployeeCounts = enterpriseUsers.map((user) => ({
+      ...user,
+      employeeCount: user.empId ? user.empId.length : 0,
+    }));
+
+    // Count total matching documents
+    const totalCount = await enterpriseUser.countDocuments({
+      $or: [
+        { username: { $regex: searchRegex } },
+        { email: { $regex: searchRegex } },
+        { name: { $regex: searchRegex } },
+      ],
+    });
+
+    // Return users and total count in the response
+    return res.status(200).json({ users: usersWithEmployeeCounts, totalCount });
+  } catch (error) {
+    console.error('Error fetching enterprise users:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
