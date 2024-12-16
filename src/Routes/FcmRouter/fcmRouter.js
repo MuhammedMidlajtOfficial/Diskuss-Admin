@@ -9,6 +9,6 @@ router.post("/sendMessageNotification", sendMessageNotification);
 router.post("/sendMeetingNotification", sendMeetingNotification);
 router.post("/login", handleLogin);
 router.post("/logout", handleLogout);
-router.get("/send-notification", sendNotification);
+router.post("/send-notification", sendNotification);
 
 module.exports = router;
