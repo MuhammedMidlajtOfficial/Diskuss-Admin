@@ -552,3 +552,63 @@ module.exports.getEnterpriseUserCount = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
+module.exports.getEnterpriseUser = async (req, res) => {
+  try {
+    // Destructure query parameters with defaults
+    const {
+      page = 1,
+      pageSize: pageSizeQuery,
+      sortField = 'username',
+      sortOrder = 'asc',
+      search = '',
+    } = req.query;
+
+    // Parse pageSize and page as integers with default values
+    const pageSize = parseInt(pageSizeQuery, 10) || 12; // Default pageSize is 12
+    const skip = (parseInt(page, 10) - 1) * pageSize; // Calculate skip for pagination
+    const sort = { [sortField]: sortOrder === 'asc' ? 1 : -1 }; // Sort order
+    const searchRegex = new RegExp(search, 'i'); // Case-insensitive regex for search
+
+    // Fetch matching enterprise users with pagination and sorting, and include employee count
+    const enterpriseUsers = await enterpriseUser
+      .find({
+        $or: [
+          { username: { $regex: searchRegex } },
+          { email: { $regex: searchRegex } },
+          { name: { $regex: searchRegex } },
+          // Add more searchable fields here if needed
+        ],
+      })
+      .sort(sort)
+      .skip(skip)
+      .limit(pageSize)
+      .lean() // Use lean for better performance
+      .populate({
+        path: 'empId', // Populate the empId references
+        select: '_id', // Only select the _id of employees
+      })
+      .select('companyName email image phnNumber')
+
+    // Add employee counts to each user
+    const usersWithEmployeeCounts = enterpriseUsers.map((user) => ({
+      ...user,
+      employeeCount: user.empId ? user.empId.length : 0,
+    }));
+
+    // Count total matching documents
+    const totalCount = await enterpriseUser.countDocuments({
+      $or: [
+        { username: { $regex: searchRegex } },
+        { email: { $regex: searchRegex } },
+        { name: { $regex: searchRegex } },
+      ],
+    });
+
+    // Return users and total count in the response
+    return res.status(200).json({ users: usersWithEmployeeCounts, totalCount });
+  } catch (error) {
+    console.error('Error fetching enterprise users:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
