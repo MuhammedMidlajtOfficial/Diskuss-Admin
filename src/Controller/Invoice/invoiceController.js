@@ -26,7 +26,7 @@ async function getInvoices(req, res) {
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .populate({ path: "planId", select: "name" }) // Include plan name
-      .populate({ path: "userId", select: ["username", "email"] }); // Include user name and email
+      .populate({ path: "userId", select: ["username", "email","phnNumber"] }); // Include user name and email
 
     // Mapping through the invoices and ensuring all required fields are included
     const formattedInvoices = invoices.map((invoice) => ({
@@ -34,6 +34,7 @@ async function getInvoices(req, res) {
       userId: invoice.userId?._id || "unknown", 
       userName: invoice.userId?.username || "unknown", // This should be static 
       userEmail: invoice.userId?.email || "unknown", // This should be static 
+      contact:invoice.userId?.phnNumber || "unknown",
       planId: invoice.planId?._id || "unknown", 
       planName: invoice.planId?.name || "unknown", 
       razorpayOrderId: invoice.razorpayOrderId || "unknown", 
