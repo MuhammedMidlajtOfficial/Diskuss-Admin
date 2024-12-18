@@ -132,11 +132,11 @@ const EmployeeCategoryController = {
       const totalRoles = category.length
       const totalActive = category.filter((role) => role.isActive).length;
       const cardData = [{
-        "title": "Total Roles",
+        "title": "Total category",
         "value": totalRoles
       },
       {
-        "title": "Total active Roles",
+        "title": "Total active category",
         "value": totalActive
       }]
       res.status(200).json(cardData);
