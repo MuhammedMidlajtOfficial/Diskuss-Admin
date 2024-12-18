@@ -8,11 +8,20 @@ const PaymentHistory = require("./Subscription/userSubscription");
 const EmployeeRouter = require("./Employee/employeeRouter")
 const invoiceRouter = require("./Invoice/invoiceRouter");
 const analyticRouter = require("./Analytic/analyticRouter")
+const superAdminAuth = require("./Auth/superAdminRouter");
+const { validateJwtToken } = require("../Middlewares/validateJwtToken");
 
 const router = express.Router();
 
-const defaultRoutes = [
+// Apply validateJwtToken to all routes except /adminAuth
+router.use((req, res, next) => {
+    if (req.originalUrl.startsWith("/adminAuth")) {
+        return next();  // Skip validation for /adminAuth
+    }
+    validateJwtToken()(req, res, next);  // Apply validation for other routes
+});
 
+const defaultRoutes = [
     {
         path: "/dashboard",
         route: overviewRouter,
@@ -48,6 +57,10 @@ const defaultRoutes = [
     {
         path: '/analytic',
         route: analyticRouter
+    },
+    {
+        path: '/adminAuth',
+        route: superAdminAuth
     },
 ];
 
