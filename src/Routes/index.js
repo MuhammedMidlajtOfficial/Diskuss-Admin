@@ -15,8 +15,9 @@ const router = express.Router();
 
 // Apply validateJwtToken to all routes except /adminAuth
 router.use((req, res, next) => {
+    console.log("originalUrl from validateJwtToken - ",req.originalUrl);
     if (
-        req.originalUrl.startsWith("/adminAuth") ||
+        req.originalUrl.startsWith("/api/v1/adminAuth") ||
         req.originalUrl.startsWith("/api/v1/fcm")
     ) {
         return next(); // Skip validation for /adminAuth and /fcm
