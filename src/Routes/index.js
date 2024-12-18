@@ -15,10 +15,14 @@ const router = express.Router();
 
 // Apply validateJwtToken to all routes except /adminAuth
 router.use((req, res, next) => {
-    if (req.originalUrl.startsWith("/adminAuth") || req.originalUrl.startsWith("/fcm")) {
-        return next();  // Skip validation for /adminAuth
+    console.log(req.originalUrl);
+    if (
+        req.originalUrl.startsWith("/adminAuth") ||
+        req.originalUrl.startsWith("/api/v1/fcm")
+    ) {
+        return next(); // Skip validation for /adminAuth and /fcm
     }
-    validateJwtToken()(req, res, next);  // Apply validation for other routes
+    validateJwtToken()(req, res, next); // Apply validation for other routes
 });
 
 const defaultRoutes = [
