@@ -10,7 +10,8 @@ const EmployeeRoleController = {
       if (!roleName || isActive === undefined) {
         return res.status(400).json({ message: "All fields must be present" });
       }
-      const existingRole = await EmployeeRole.findOne({ roleName });
+      const uppercaseRoleName = roleName.toUpperCase()
+      const existingRole = await EmployeeRole.findOne({ roleName: uppercaseRoleName });
       if (existingRole) {
         return res.status(409).json({ message: "Role already exists" });
       }
@@ -33,26 +34,6 @@ const EmployeeRoleController = {
     }
   },
 
-  // // Getting Role count
-  // getRolesCounts: async (req, res) => {
-  //   try {
-  //     const roles = await EmployeeRole.find();
-  //     const totalRoles = roles.length
-  //     const totalActive = roles.filter((role) => role.isActive).length;
-  //     const cardData = [{
-  //       "title": "Total Roles",
-  //       "value": totalRoles
-  //     },
-  //     {
-  //       "title": "Total active Roles",
-  //       "value": totalActive
-  //     }]
-  //     res.status(200).json(cardData);
-  //   } catch (error) {
-  //     res.status(500).json({ message: "Error fetching roles", error: error.message });
-  //   }
-  // },
-
   // Updating Role
   updateRole: async (req, res) => {
     try {
@@ -61,6 +42,13 @@ const EmployeeRoleController = {
         res.status(404).json({ message: "Role not found" });
       }
       const updates = req.body;
+
+      const uppercaseRoleName = updates.roleName.toUpperCase()
+      const existingRole = await EmployeeRole.findOne({ roleName: uppercaseRoleName });
+      if (existingRole) {
+        return res.status(409).json({ message: "Role already exists" });
+      }
+
       const updatedRole = await EmployeeRole.findByIdAndUpdate(id, updates, { new: true });
       if (!updatedRole) return res.status(501).json({ message: "Something went wrong" });
       res.status(200).json({ message: "Role updated successfully", updatedRole });
@@ -97,6 +85,27 @@ const EmployeeRoleController = {
       res.status(500).json({ message: "Error updating status", error: error.message });
     }
   },
+
+  // // Getting Role count
+  // getRolesCounts: async (req, res) => {
+  //   try {
+  //     const roles = await EmployeeRole.find();
+  //     const totalRoles = roles.length
+  //     const totalActive = roles.filter((role) => role.isActive).length;
+  //     const cardData = [{
+  //       "title": "Total Roles",
+  //       "value": totalRoles
+  //     },
+  //     {
+  //       "title": "Total active Roles",
+  //       "value": totalActive
+  //     }]
+  //     res.status(200).json(cardData);
+  //   } catch (error) {
+  //     res.status(500).json({ message: "Error fetching roles", error: error.message });
+  //   }
+  // },
+
 };
 
 const EmployeeCategoryController = {
@@ -106,6 +115,11 @@ const EmployeeCategoryController = {
       const { categoryName, isActive, roles } = req.body;
       if(!categoryName){
         res.status(404).json({ message: "Category Name is Needed"})
+      }
+      const uppercaseCategoryName = categoryName.toUpperCase()
+      const existingCategory = await EmployeeRole.findOne({ categoryName: uppercaseCategoryName });
+      if (existingCategory) {
+        return res.status(409).json({ message: "Category already exists" });
       }
       const category = new EmployeeCategory({ categoryName, isActive, roles });
       await category.save();
@@ -125,26 +139,6 @@ const EmployeeCategoryController = {
     }
   },
 
-  // // Getting Category count
-  // getCategoryCounts: async (req, res) => {
-  //   try {
-  //     const category = await EmployeeCategory.find();
-  //     const totalRoles = category.length
-  //     const totalActive = category.filter((role) => role.isActive).length;
-  //     const cardData = [{
-  //       "title": "Total category",
-  //       "value": totalRoles
-  //     },
-  //     {
-  //       "title": "Total active category",
-  //       "value": totalActive
-  //     }]
-  //     res.status(200).json(cardData);
-  //   } catch (error) {
-  //     res.status(500).json({ message: "Error fetching category", error: error.message });
-  //   }
-  // }, 
-
   // Updating Category
   updateCategory: async (req, res) => {
     try {
@@ -153,6 +147,11 @@ const EmployeeCategoryController = {
         res.status(404).json({message: "Category not found"});
       }
       const updates = req.body;
+      const uppercaseCategoryName = updates.categoryName.toUpperCase()
+      const existingCategory = await EmployeeRole.findOne({ categoryName: uppercaseCategoryName });
+      if (existingCategory) {
+        return res.status(409).json({ message: "Category already exists" });
+      }
       const updatedCategory = await EmployeeCategory.findByIdAndUpdate(id, updates, { new: true }).populate("roles");
       if (!updatedCategory) return res.status(404).json({ message: "Category not found" });
       res.status(200).json({ message: "Category updated successfully", updatedCategory });
@@ -189,6 +188,27 @@ const EmployeeCategoryController = {
       res.status(500).json({ message: "Error updating status", error: error.message });
     }
   },
+
+  // // Getting Category count
+  // getCategoryCounts: async (req, res) => {
+  //   try {
+  //     const category = await EmployeeCategory.find();
+  //     const totalRoles = category.length
+  //     const totalActive = category.filter((role) => role.isActive).length;
+  //     const cardData = [{
+  //       "title": "Total category",
+  //       "value": totalRoles
+  //     },
+  //     {
+  //       "title": "Total active category",
+  //       "value": totalActive
+  //     }]
+  //     res.status(200).json(cardData);
+  //   } catch (error) {
+  //     res.status(500).json({ message: "Error fetching category", error: error.message });
+  //   }
+  // }, 
+
 };
 
 module.exports = { EmployeeRoleController, EmployeeCategoryController };
