@@ -23,12 +23,31 @@ const EmployeeRoleController = {
     }
   },
   
-
   // Getting All Roles
   getRoles: async (req, res) => {
     try {
       const roles = await EmployeeRole.find();
       res.status(200).json(roles);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching roles", error: error.message });
+    }
+  },
+
+  // Getting Role count
+  getRolesCounts: async (req, res) => {
+    try {
+      const roles = await EmployeeRole.find();
+      const totalRoles = roles.length
+      const totalActive = roles.filter((role) => role.isActive).length;
+      const cardData = [{
+        "title": "Total Roles",
+        "value": totalRoles
+      },
+      {
+        "title": "Total active Roles",
+        "value": totalActive
+      }]
+      res.status(200).json(cardData);
     } catch (error) {
       res.status(500).json({ message: "Error fetching roles", error: error.message });
     }
@@ -105,6 +124,26 @@ const EmployeeCategoryController = {
       res.status(500).json({ message: "Error fetching categories", error: error.message });
     }
   },
+
+  // Getting Category count
+  getCategoryCounts: async (req, res) => {
+    try {
+      const category = await EmployeeCategory.find();
+      const totalRoles = category.length
+      const totalActive = category.filter((role) => role.isActive).length;
+      const cardData = [{
+        "title": "Total Roles",
+        "value": totalRoles
+      },
+      {
+        "title": "Total active Roles",
+        "value": totalActive
+      }]
+      res.status(200).json(cardData);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching category", error: error.message });
+    }
+  }, 
 
   // Updating Category
   updateCategory: async (req, res) => {
