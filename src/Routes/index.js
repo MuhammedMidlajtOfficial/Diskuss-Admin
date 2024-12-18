@@ -7,6 +7,7 @@ const SubscriptionPlan = require("./Subscription/subscription");
 const PaymentHistory = require("./Subscription/userSubscription");
 const EmployeeRouter = require("./Employee/employeeRouter")
 const invoiceRouter = require("./Invoice/invoiceRouter");
+const analyticRouter = require("./Analytic/analyticRouter")
 
 const router = express.Router();
 
@@ -44,8 +45,10 @@ const defaultRoutes = [
         path: "/invoice",
         route: invoiceRouter,
     },
-
-
+    {
+        path: '/analytic',
+        route: analyticRouter
+    },
 ];
 
 defaultRoutes.forEach((route) => {
