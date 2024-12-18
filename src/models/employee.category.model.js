@@ -8,4 +8,11 @@ const EmployeeCategorySchema = new mongoose.Schema({
     collection: 'admin.category'
  });
 
+ EmployeeCategorySchema.pre('save', function (next) {
+    if (this.categoryName) {
+        this.categoryName = this.categoryName.toUpperCase();
+    }
+    next();
+});
+
 module.exports = mongoose.model('EmployeeCategory', EmployeeCategorySchema);

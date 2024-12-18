@@ -9,12 +9,12 @@ router.get('/roles', EmployeeRoleController.getRoles);
 router.put('/roles/:id', EmployeeRoleController.updateRole);
 router.delete('/roles/:id', EmployeeRoleController.deleteRole);
 router.patch('/roles/:id/toggle-active', EmployeeRoleController.toggleIsActive);
-router.get('/roles-count', EmployeeRoleController.getRolesCounts)
+// router.get('/roles-count', EmployeeRoleController.getRolesCounts)
 
 // Employee Category
 router.post('/categories', EmployeeCategoryController.createCategory);
 router.get('/categories', EmployeeCategoryController.getCategories);
-router.get('/category-count', EmployeeCategoryController.getCategoryCounts)
+// router.get('/category-count', EmployeeCategoryController.getCategoryCounts)
 router.put('/categories/:id', EmployeeCategoryController.updateCategory);
 router.delete('/categories/:id', EmployeeCategoryController.deleteCategory);
 router.patch('/categories/:id/toggle-active', EmployeeCategoryController.toggleIsActive);
