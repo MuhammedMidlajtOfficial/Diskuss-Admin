@@ -44,7 +44,6 @@ const EmployeeController = {
         employees: employees,
       });
     } catch (error) {
-      console.error("Error fetching employees:", error.message);
       res.status(500).json({ message: "Error fetching employees", error: error.message });
     }
   },
@@ -70,11 +69,7 @@ const EmployeeController = {
         }
         employee.email = email;
       }
-  
-
       Object.assign(employee, otherData);
-  
-
       if (password) {
         employee.password = password;
       }
@@ -100,7 +95,6 @@ const EmployeeController = {
     try {
       const { id } = req.params;
       const deletedEmployee = await Employee.findByIdAndDelete(id);
-  
       if (!deletedEmployee) {
         return res.status(404).json({
           success: false,

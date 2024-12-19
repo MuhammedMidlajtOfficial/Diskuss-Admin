@@ -11,19 +11,20 @@ const analyticRouter = require("./Analytic/analyticRouter")
 const superAdminAuth = require("./Auth/superAdminRouter");
 const { validateJwtToken } = require("../Middlewares/validateJwtToken");
 
+
 const router = express.Router();
 
 // Apply validateJwtToken to all routes except /adminAuth
-router.use((req, res, next) => {
-    console.log("originalUrl from validateJwtToken - ",req.originalUrl);
-    if (
-        req.originalUrl.startsWith("/api/v1/adminAuth") ||
-        req.originalUrl.startsWith("/api/v1/fcm")
-    ) {
-        return next(); // Skip validation for /adminAuth and /fcm
-    }
-    validateJwtToken()(req, res, next); // Apply validation for other routes
-});
+// router.use((req, res, next) => {
+//     console.log("originalUrl from validateJwtToken - ",req.originalUrl);
+//     if (
+//         req.originalUrl.startsWith("/api/v1/adminAuth") ||
+//         req.originalUrl.startsWith("/api/v1/fcm")
+//     ) {
+//         return next(); // Skip validation for /adminAuth and /fcm
+//     }
+//     validateJwtToken()(req, res, next); // Apply validation for other routes
+// });
 
 const defaultRoutes = [
     {
@@ -66,6 +67,7 @@ const defaultRoutes = [
         path: '/adminAuth',
         route: superAdminAuth
     },
+
 ];
 
 defaultRoutes.forEach((route) => {
