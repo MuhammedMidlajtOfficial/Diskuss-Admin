@@ -8,7 +8,7 @@ const EmployeeController = {
   createEmployee: async (req, res) => {
     try {
       const { fullName, userName, userImage, email, password, confirmPassword, phoneNumber, category } = req.body;
-      if (!fullName || !userName || !userImage || !email || !password || !confirmPassword || !phoneNumber || !category) {
+      if (!fullName || !userName || !userImage || !email || !password || !confirmPassword || !phoneNumber ) {
         return res.status(400).json({ message: "All fields must be present" });
       }
       const existingEmployee = await Employee.findOne({ email });
@@ -50,51 +50,56 @@ const EmployeeController = {
   },
 
   // Updating employee
-  updateEmployee: async (req, res) => {
+  updateEmployee : async (req, res) => {
     try {
-      const { employeeId } = req.params;
-      const { email, ...otherData } = req.body;
-
-      const employee = await Employee.findById(employeeId);
+      const { id } = req.params;
+      const { email, password, ...otherData } = req.body;
+  
+      const employee = await Employee.findById(id);
       if (!employee) {
-        return res.status(404).json({ success: false, message: "Employee not found" });
+        return res.status(404).json({ success: false, message: "Employee not found." });
       }
 
-      if (email) {
+      if (email && email !== employee.email) {
         const existingEmployee = await Employee.findOne({ email });
-        if (existingEmployee && existingEmployee._id.toString() !== employeeId) {
+        if (existingEmployee && existingEmployee._id.toString() !== id) {
           return res.status(400).json({
             success: false,
-            message: "Email is already in use by another employee",
+            message: "Email is already in use by another employee.",
           });
         }
+        employee.email = email;
       }
   
-      const updatedEmployee = await Employee.findByIdAndUpdate(
-        employeeId,
-        { $set: { email, ...otherData } },
-        { new: true, runValidators: true }
-      );
+
+      Object.assign(employee, otherData);
   
-      if (!updatedEmployee) {
-        return res.status(404).json({ success: false, message: "Employee not found" });
+
+      if (password) {
+        employee.password = password;
       }
+  
+      const updatedEmployee = await employee.save();
   
       res.status(200).json({
         success: true,
-        message: "Employee updated successfully",
+        message: "Employee updated successfully.",
         employee: updatedEmployee,
       });
     } catch (error) {
-      res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+      res.status(500).json({
+        success: false,
+        message: "Internal Server Error.",
+        error: error.message,
+      });
     }
   },
-
+  
   // Delete employee
   deleteEmployee: async (req, res) => {
     try {
-      const { employeeId } = req.params;
-      const deletedEmployee = await Employee.findByIdAndDelete(employeeId);
+      const { id } = req.params;
+      const deletedEmployee = await Employee.findByIdAndDelete(id);
   
       if (!deletedEmployee) {
         return res.status(404).json({
