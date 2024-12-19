@@ -1,0 +1,28 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.DISKUSS_ADMIN_SSH_PRIVATE_KEY }}
+
+    - name: SSH into EC2 and Deploy
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@13.203.24.247 << 'EOF'
+          cd ~/Diskuss-Admin
+          git pull origin main
+          npm install
+          pm2 restart diskuss-admin
+        EOF
