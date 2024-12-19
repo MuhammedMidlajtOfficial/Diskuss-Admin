@@ -1,9 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { EmployeeRoleController, EmployeeCategoryController } = require('../../Controller/Employee/employeeController');
+const { EmployeeRoleController, EmployeeCategoryController, EmployeeController } = require('../../Controller/Employee/employeeController');
+
+// Employee 
+router.post('/', EmployeeController.createEmployee);
+router.get('/', EmployeeController.getEmployees);
+router.put('/:id', EmployeeController.updateEmployee);
+router.delete('/:id', EmployeeController.deleteEmployee);
+// router.post('/login', EmployeeController.loginEmployee)
 
 // Employee Role
-
 router.post('/roles', EmployeeRoleController.createRole);
 router.get('/roles', EmployeeRoleController.getRoles);
 router.put('/roles/:id', EmployeeRoleController.updateRole);
