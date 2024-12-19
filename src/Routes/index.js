@@ -11,6 +11,7 @@ const analyticRouter = require("./Analytic/analyticRouter")
 const superAdminAuth = require("./Auth/superAdminRouter");
 const { validateJwtToken } = require("../Middlewares/validateJwtToken");
 
+
 const router = express.Router();
 
 // Apply validateJwtToken to all routes except /adminAuth
@@ -66,6 +67,7 @@ const defaultRoutes = [
         path: '/adminAuth',
         route: superAdminAuth
     },
+
 ];
 
 defaultRoutes.forEach((route) => {
