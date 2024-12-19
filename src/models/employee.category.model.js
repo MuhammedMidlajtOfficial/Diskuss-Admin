@@ -7,7 +7,6 @@ const EmployeeCategorySchema = new mongoose.Schema({
 }, { timestamps: true,
     collection: 'admin.category'
  });
-
  EmployeeCategorySchema.pre('save', function (next) {
     if (this.categoryName) {
         this.categoryName = this.categoryName.toUpperCase();
