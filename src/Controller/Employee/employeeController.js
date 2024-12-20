@@ -1,21 +1,39 @@
 const EmployeeCategory = require('../../models/employee.category.model');
 const EmployeeRole = require('../../models/employee.role.model');
 const Employee = require('../../models/employee.model')
+const {uploadImageToS3, deleteImageFromS3}= require("../../services/AWS/s3Bucket");
 
 const EmployeeController = {
 
   // Creating employee
   createEmployee: async (req, res) => {
     try {
-      const { fullName, userName, userImage, email, password, confirmPassword, phoneNumber, category } = req.body;
-      if (!fullName || !userName || !userImage || !email || !password || !confirmPassword || !phoneNumber || !category) {
+      const { userName,image, email, password, phoneNumber, category } = req.body;
+      if ( !userName || !image || !email || !password || !phoneNumber || !category) {
         return res.status(400).json({ message: "All fields must be present" });
       }
       const existingEmployee = await Employee.findOne({ email });
       if (existingEmployee) {
         return res.status(409).json({ message: "Employee already exists" });
       }
-      const employee = new Employee({ fullName, userName, userImage, email, password, confirmPassword, phoneNumber, category });
+
+      let imageUrl ;
+    // Upload image to S3 if a new image is provided
+    if (image) {
+      const imageBuffer = Buffer.from(image.replace(/^data:image\/\w+;base64,/, ""), 'base64');
+      const fileName = `${Date.now()}-${userName}-employee-profile.jpg`;
+      try {
+        const uploadResult = await uploadImageToS3(imageBuffer, fileName);
+        imageUrl = uploadResult.Location;
+        console.log("Upload result:", uploadResult);
+      } catch (uploadError) {
+        console.log("Error uploading image to S3:", uploadError);
+        return res.status(500).json({ message: "Failed to upload image", error: uploadError });
+      }
+    }
+      const employee = new Employee({ userName,image, email, password, phoneNumber, category });
+      console.log("emp:",employee);
+      
       if (!employee) {
         return res.status(509).json({ message: "Employee creation failed" });
       }
