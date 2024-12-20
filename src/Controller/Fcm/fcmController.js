@@ -22,12 +22,17 @@ exports.handleSubscription = async (req, res) => {
           title: "Plan Activated",
           body: "Your plan has been successfully activated! Enjoy the premium features.",
         },
+        data: {
+          notificationType: "subscription",
+        },
         token: fcmId, // Send to specific FCM ID
       };
 
       // Send the notification
       const response = await admin.messaging().send(message);
       console.log("Subscription notification sent:", response);
+      console.log("message:",message);
+      
 
       res.status(200).send("Subscription notification sent successfully.");
     } else {
@@ -91,6 +96,7 @@ exports.sendMessageNotification = async (req, res) => {
       },
       data: {
         chatId,
+        notificationType: "message",
       },
       token: fcmData.fcmId,
     };
@@ -126,6 +132,9 @@ exports.sendMeetingNotification = async (req, res) => {
           notification: {
             title: notification.title,
             body: notification.body,
+          },
+          data: {
+            notificationType: "meeting", 
           },
           token: fcmData.fcmId,
         };
@@ -258,6 +267,7 @@ exports.sendNotification = async (req, res) => {
       },
       data: {
         imageUrl: imageUrl || "",
+        notificationType: "home",
       },
       topic: `/topics/${topic}`,
     };

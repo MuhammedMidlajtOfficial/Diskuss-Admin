@@ -559,18 +559,25 @@ module.exports.getEnterpriseUser = async (req, res) => {
     const {
       page = 1,
       pageSize: pageSizeQuery,
-      sortField = 'username',
-      sortOrder = 'asc',
+      sortField = 'companyName', // Default to sorting by companyName
+      sortOrder = 'asc',         // Default to ascending order
       search = '',
     } = req.query;
+
+    // Ensure sortField is a valid field in your collection
+    const validSortFields = ['username', 'email', 'companyName']; // Add companyName as valid
+    if (!validSortFields.includes(sortField)) {
+      return res.status(400).json({ message: 'Invalid sort field' });
+    }
 
     // Parse pageSize and page as integers with default values
     const pageSize = parseInt(pageSizeQuery, 10) || 12; // Default pageSize is 12
     const skip = (parseInt(page, 10) - 1) * pageSize; // Calculate skip for pagination
-    const sort = { [sortField]: sortOrder === 'asc' ? 1 : -1 }; // Sort order
+    const sort = { [sortField]: sortOrder === 'asc' ? 1 : -1 }; // Sort order based on the query
+
     const searchRegex = new RegExp(search, 'i'); // Case-insensitive regex for search
 
-    // Fetch matching enterprise users with pagination and sorting, and include employee count
+    // Fetch matching enterprise users with pagination and sorting
     const enterpriseUsers = await enterpriseUser
       .find({
         $or: [
@@ -588,7 +595,7 @@ module.exports.getEnterpriseUser = async (req, res) => {
         path: 'empId', // Populate the empId references
         select: '_id', // Only select the _id of employees
       })
-      .select('companyName email image phnNumber')
+      .select('companyName email image phnNumber');
 
     // Add employee counts to each user
     const usersWithEmployeeCounts = enterpriseUsers.map((user) => ({
@@ -609,6 +616,25 @@ module.exports.getEnterpriseUser = async (req, res) => {
     return res.status(200).json({ users: usersWithEmployeeCounts, totalCount });
   } catch (error) {
     console.error('Error fetching enterprise users:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports.getEnterpriseUserById = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Check if the user exists in the EnterpriseUser collection
+    const enterpriseUserExist = await enterpriseUser.findById(userId).populate('empId')
+    if (enterpriseUserExist) {
+      return res.status(200).json({ userData: enterpriseUserExist, userType: 'enterprise' });
+    }
+
+    // If no user is found in any collection
+    return res.status(404).json({ message: 'User not found' });
+
+  } catch (error) {
+    console.error('Error fetching users:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };

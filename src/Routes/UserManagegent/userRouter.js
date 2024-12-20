@@ -16,5 +16,6 @@ router.post('/addEnterpriseEmployee',controller.addEnterpriseEmployee)
 // Enterprise User Management
 router.get('/getEnterpriseUserCount',controller.getEnterpriseUserCount)
 router.get('/getEnterpriseUser',controller.getEnterpriseUser)
+router.get('/getEnterpriseUserById/:id',controller.getEnterpriseUserById)
 
 module.exports = router;
