@@ -3,13 +3,12 @@ const bcrypt = require('bcrypt')
 // const jwt = require('jsonwebtoken')
 
 const EmployeeSchema = new mongoose.Schema({
-    fullName: { type: String, required: true },
-    userName: { type: String, required: true, unique: true },
-    userImage: { type: String, required: true },
+    userName: { type: String, required: true },
+    image: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     phoneNumber: { type: String, required: true },
-    category: [{ type: mongoose.Schema.Types.ObjectId }],
+    category: [{ type: String, required: true}],
 }, { timestamps: true });
 
 EmployeeSchema.pre('save', async function (next) {
