@@ -26,6 +26,7 @@ const router = express.Router();
 //     validateJwtToken()(req, res, next); // Apply validation for other routes
 // });
 
+
 const defaultRoutes = [
     {
         path: "/dashboard",

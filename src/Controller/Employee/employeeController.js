@@ -3,6 +3,7 @@ const EmployeeRole = require('../../models/employee.role.model');
 const Employee = require('../../models/employee.model')
 const { uploadImageToS3, deleteImageFromS3 } = require("../../services/AWS/s3Bucket");
 
+
 const EmployeeController = {
 
   // Creating employee
@@ -134,7 +135,6 @@ const EmployeeController = {
   deleteEmployee: async (req, res) => {
     try {
       const { employeeId } = req.params;
-
       const employee = await Employee.findById(employeeId);
       if (!employee) {
         return res.status(404).json({ success: false, message: "Employee not found" });
@@ -151,7 +151,6 @@ const EmployeeController = {
       if (!deletedEmployee) {
         return res.status(404).json({ success: false, message: "Employee not found" });
       }
-
       res.status(200).json({
         success: true,
         message: "Employee deleted successfully",
@@ -162,6 +161,7 @@ const EmployeeController = {
     }
   }
   ,
+
 
   // // Login employee
   // loginEmployee: async (req, res) => {

@@ -7,6 +7,7 @@ router.post('/', EmployeeController.createEmployee);
 router.get('/', EmployeeController.getEmployees);
 router.put('/:employeeId', EmployeeController.updateEmployee);
 router.delete('/:employeeId', EmployeeController.deleteEmployee);
+
 // router.post('/login', EmployeeController.loginEmployee)
 
 // Employee Role

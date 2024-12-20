@@ -8,6 +8,7 @@ const router = Router();
 router.post('/superAdminSignup', controller.postSuperAdminSignup);
 router.post('/superAdminLogin', controller.postLogin);
 
+
 // Protected routes (Add JWT validation for these routes)
 router.get('/superAdminDashboard', validateJwtToken); // JWT validation applied here
 

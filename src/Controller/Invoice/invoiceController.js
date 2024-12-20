@@ -4,6 +4,7 @@ async function getInvoices(req, res) {
   try {
     const { limit = 10, filter, startDate, endDate } = req.query;
 
+
     let dateFilter = {}; // Default: No filter applied (return all invoices)
     const currentDate = new Date();
 
@@ -23,6 +24,7 @@ async function getInvoices(req, res) {
       const adjustedEndDate = new Date(endDate);
       adjustedEndDate.setDate(adjustedEndDate.getDate() + 1); 
       dateFilter = { createdAt: { $gte: new Date(startDate), $lte: adjustedEndDate } };
+
     }
 
     // Total number of invoices (useful for count)
@@ -33,6 +35,7 @@ async function getInvoices(req, res) {
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .populate({ path: "planId", select: ["name","price"] }) // Include plan name
+
       .populate({ path: "userId", select: ["username", "email","phnNumber"] }); // Include user name and email
 
     // Mapping through the invoices and ensuring all required fields are included
@@ -46,17 +49,20 @@ async function getInvoices(req, res) {
       planName: invoice.planId?.name || "unknown", 
       razorpayOrderId: invoice.razorpayOrderId || "unknown", 
       amount: invoice.planId?.price || "unknown", // Default value if amount is not in the model
+
       paymentMethod: invoice.payment?.[0] || "unknown", // Payment method from payment array (unknown type)
       paymentDate: invoice.createdAt || "unknown", // CreatedAt from timestamps
       subscriptionStartDate: invoice.startDate || "unknown", 
       subscriptionEndDate: invoice.endDate || "unknown", 
       status: invoice.status || "active", // Default status if not available in the model
+
     }));
 
 
     res.status(200).json({
       success: true,
       totalInvoices: totalInvoices,
+
       invoices: formattedInvoices,
     });
   } catch (error) {

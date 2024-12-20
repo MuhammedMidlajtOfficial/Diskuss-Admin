@@ -73,6 +73,7 @@ module.exports.postLogin = async (req, res) => {
 
     // Check if the password matches
     const passwordMatch = await bcrypt.compare(password, user.password);
+
     if (!passwordMatch) {
       return res.status(401).json({ message: 'Incorrect password. Please try again' });
     }
@@ -98,6 +99,7 @@ module.exports.postLogin = async (req, res) => {
       userType,
       userName:user.userName,
       ...(userType === 'employee' && { category: user.category }), // Include category in the response if Employee
+
     });
   } catch (error) {
     console.error('Error during login:', error);
