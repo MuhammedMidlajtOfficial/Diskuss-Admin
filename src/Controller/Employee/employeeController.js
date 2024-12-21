@@ -1,16 +1,25 @@
-const EmployeeCategory = require('../../models/employee.category.model');
-const EmployeeRole = require('../../models/employee.role.model');
-const Employee = require('../../models/employee.model')
-const { uploadImageToS3, deleteImageFromS3 } = require("../../services/AWS/s3Bucket");
-
+const EmployeeCategory = require("../../models/employee.category.model");
+const EmployeeRole = require("../../models/employee.role.model");
+const Employee = require("../../models/employee.model");
+const {
+  uploadImageToS3,
+  deleteImageFromS3,
+} = require("../../services/AWS/s3Bucket");
 
 const EmployeeController = {
-
   // Creating employee
   createEmployee: async (req, res) => {
     try {
-      const { userName, image, email, password, phoneNumber, category } = req.body;
-      if (!userName || !image || !email || !password || !phoneNumber || !category) {
+      const { userName, image, email, password, phoneNumber, category } =
+        req.body;
+      if (
+        !userName ||
+        !image ||
+        !email ||
+        !password ||
+        !phoneNumber ||
+        !category
+      ) {
         return res.status(400).json({ message: "All fields must be present" });
       }
       const existingEmployee = await Employee.findOne({ email });
@@ -21,7 +30,10 @@ const EmployeeController = {
       let imageUrl;
       // Upload image to S3 if a new image is provided
       if (image) {
-        const imageBuffer = Buffer.from(image.replace(/^data:image\/\w+;base64,/, ""), 'base64');
+        const imageBuffer = Buffer.from(
+          image.replace(/^data:image\/\w+;base64,/, ""),
+          "base64"
+        );
         const fileName = `${Date.now()}-${userName}-employee-profile.jpg`;
         try {
           const uploadResult = await uploadImageToS3(imageBuffer, fileName);
@@ -29,19 +41,32 @@ const EmployeeController = {
           console.log("Upload result:", uploadResult);
         } catch (uploadError) {
           console.log("Error uploading image to S3:", uploadError);
-          return res.status(500).json({ message: "Failed to upload image", error: uploadError });
+          return res
+            .status(500)
+            .json({ message: "Failed to upload image", error: uploadError });
         }
       }
-      const employee = new Employee({ userName, image: imageUrl, email, password, phoneNumber, category });
+      const employee = new Employee({
+        userName,
+        image: imageUrl,
+        email,
+        password,
+        phoneNumber,
+        category,
+      });
       console.log("emp:", employee);
 
       if (!employee) {
         return res.status(509).json({ message: "Employee creation failed" });
       }
       await employee.save();
-      return res.status(201).json({ message: "Employee created successfully", employee });
+      return res
+        .status(201)
+        .json({ message: "Employee created successfully", employee });
     } catch (error) {
-      return res.status(500).json({ message: "Error creating employee", error: error.message });
+      return res
+        .status(500)
+        .json({ message: "Error creating employee", error: error.message });
     }
   },
 
@@ -64,7 +89,38 @@ const EmployeeController = {
       });
     } catch (error) {
       console.error("Error fetching employees:", error.message);
-      res.status(500).json({ message: "Error fetching employees", error: error.message });
+      res
+        .status(500)
+        .json({ message: "Error fetching employees", error: error.message });
+    }
+  },
+
+  // Getting an employee by ID
+  getEmployeeById: async (req, res) => {
+    try {
+      const { employeeId } = req.params;
+
+      const employee = await Employee.findById(employeeId);
+
+      if (!employee) {
+        return res.status(404).json({
+          success: false,
+          message: "Employee not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        employee: employee,
+      });
+    } catch (error) {
+      console.error("Error fetching employee by ID:", error.message);
+
+      res.status(500).json({
+        success: false,
+        message: "Error fetching employee by ID",
+        error: error.message,
+      });
     }
   },
 
@@ -76,12 +132,17 @@ const EmployeeController = {
 
       const employee = await Employee.findById(employeeId);
       if (!employee) {
-        return res.status(404).json({ success: false, message: "Employee not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Employee not found" });
       }
 
       if (email && email !== employee.email) {
         const existingEmployee = await Employee.findOne({ email });
-        if (existingEmployee && existingEmployee._id.toString() !== employeeId) {
+        if (
+          existingEmployee &&
+          existingEmployee._id.toString() !== employeeId
+        ) {
           return res.status(400).json({
             success: false,
             message: "Email is already in use by another employee",
@@ -93,7 +154,7 @@ const EmployeeController = {
 
       if (image) {
         if (employee.image) {
-          const oldImageKey = employee.image.split('/').pop();
+          const oldImageKey = employee.image.split("/").pop();
           try {
             await deleteImageFromS3(oldImageKey);
           } catch (deleteError) {
@@ -101,14 +162,22 @@ const EmployeeController = {
           }
         }
 
-        const imageBuffer = Buffer.from(image.replace(/^data:image\/\w+;base64,/, ""), 'base64');
+        const imageBuffer = Buffer.from(
+          image.replace(/^data:image\/\w+;base64,/, ""),
+          "base64"
+        );
         const fileName = `${Date.now()}-${employee.userName}-employee-profile.jpg`;
         try {
           const uploadResult = await uploadImageToS3(imageBuffer, fileName);
           imageUrl = uploadResult.Location;
         } catch (uploadError) {
           console.error("Error uploading new image to S3:", uploadError);
-          return res.status(500).json({ message: "Failed to upload new image", error: uploadError });
+          return res
+            .status(500)
+            .json({
+              message: "Failed to upload new image",
+              error: uploadError,
+            });
         }
       }
       const updatedEmployee = await Employee.findByIdAndUpdate(
@@ -118,7 +187,9 @@ const EmployeeController = {
       );
 
       if (!updatedEmployee) {
-        return res.status(404).json({ success: false, message: "Employee not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Employee not found" });
       }
 
       res.status(200).json({
@@ -127,7 +198,13 @@ const EmployeeController = {
         employee: updatedEmployee,
       });
     } catch (error) {
-      res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Internal Server Error",
+          error: error.message,
+        });
     }
   },
 
@@ -137,10 +214,12 @@ const EmployeeController = {
       const { employeeId } = req.params;
       const employee = await Employee.findById(employeeId);
       if (!employee) {
-        return res.status(404).json({ success: false, message: "Employee not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Employee not found" });
       }
       if (employee.image) {
-        const imageKey = employee.image.split('/').pop();
+        const imageKey = employee.image.split("/").pop();
         try {
           await deleteImageFromS3(imageKey);
         } catch (deleteError) {
@@ -149,7 +228,9 @@ const EmployeeController = {
       }
       const deletedEmployee = await Employee.findByIdAndDelete(employeeId);
       if (!deletedEmployee) {
-        return res.status(404).json({ success: false, message: "Employee not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Employee not found" });
       }
       res.status(200).json({
         success: true,
@@ -157,11 +238,15 @@ const EmployeeController = {
         employee: deletedEmployee,
       });
     } catch (error) {
-      res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Internal Server Error",
+          error: error.message,
+        });
     }
-  }
-  ,
-
+  },
 
   // // Login employee
   // loginEmployee: async (req, res) => {
@@ -213,11 +298,9 @@ const EmployeeController = {
   //     });
   //   }
   // },
-
-}
+};
 
 const EmployeeRoleController = {
-
   // Creating Role
   createRole: async (req, res) => {
     try {
@@ -225,17 +308,23 @@ const EmployeeRoleController = {
       if (!roleName || isActive === undefined) {
         return res.status(400).json({ message: "All fields must be present" });
       }
-      const uppercaseRoleName = roleName.toUpperCase()
-      const existingRole = await EmployeeRole.findOne({ roleName: uppercaseRoleName });
+      const uppercaseRoleName = roleName.toUpperCase();
+      const existingRole = await EmployeeRole.findOne({
+        roleName: uppercaseRoleName,
+      });
       if (existingRole) {
         return res.status(409).json({ message: "Role already exists" });
       }
       const role = new EmployeeRole({ roleName, isActive });
       await role.save();
 
-      return res.status(201).json({ message: "Role created successfully", role });
+      return res
+        .status(201)
+        .json({ message: "Role created successfully", role });
     } catch (error) {
-      return res.status(500).json({ message: "Error creating role", error: error.message });
+      return res
+        .status(500)
+        .json({ message: "Error creating role", error: error.message });
     }
   },
 
@@ -245,7 +334,9 @@ const EmployeeRoleController = {
       const roles = await EmployeeRole.find();
       res.status(200).json(roles);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching roles", error: error.message });
+      res
+        .status(500)
+        .json({ message: "Error fetching roles", error: error.message });
     }
   },
 
@@ -258,17 +349,26 @@ const EmployeeRoleController = {
       }
       const updates = req.body;
 
-      const uppercaseRoleName = updates.roleName.toUpperCase()
-      const existingRole = await EmployeeRole.findOne({ roleName: uppercaseRoleName });
+      const uppercaseRoleName = updates.roleName.toUpperCase();
+      const existingRole = await EmployeeRole.findOne({
+        roleName: uppercaseRoleName,
+      });
       if (existingRole) {
         return res.status(409).json({ message: "Role already exists" });
       }
 
-      const updatedRole = await EmployeeRole.findByIdAndUpdate(id, updates, { new: true });
-      if (!updatedRole) return res.status(501).json({ message: "Something went wrong" });
-      res.status(200).json({ message: "Role updated successfully", updatedRole });
+      const updatedRole = await EmployeeRole.findByIdAndUpdate(id, updates, {
+        new: true,
+      });
+      if (!updatedRole)
+        return res.status(501).json({ message: "Something went wrong" });
+      res
+        .status(200)
+        .json({ message: "Role updated successfully", updatedRole });
     } catch (error) {
-      res.status(500).json({ message: "Error updating role", error: error.message });
+      res
+        .status(500)
+        .json({ message: "Error updating role", error: error.message });
     }
   },
 
@@ -280,10 +380,13 @@ const EmployeeRoleController = {
         res.status(404).json({ message: "Role not found" });
       }
       const deletedRole = await EmployeeRole.findByIdAndDelete(id);
-      if (!deletedRole) return res.status(504).json({ message: "Something went wrong" });
+      if (!deletedRole)
+        return res.status(504).json({ message: "Something went wrong" });
       res.status(200).json({ message: "Role deleted successfully" });
     } catch (error) {
-      res.status(500).json({ message: "Error deleting role", error: error.message });
+      res
+        .status(500)
+        .json({ message: "Error deleting role", error: error.message });
     }
   },
 
@@ -297,7 +400,9 @@ const EmployeeRoleController = {
       await role.save();
       res.status(200).json({ message: "Role status updated", role });
     } catch (error) {
-      res.status(500).json({ message: "Error updating status", error: error.message });
+      res
+        .status(500)
+        .json({ message: "Error updating status", error: error.message });
     }
   },
 
@@ -320,7 +425,6 @@ const EmployeeRoleController = {
   //     res.status(500).json({ message: "Error fetching roles", error: error.message });
   //   }
   // },
-
 };
 
 const EmployeeCategoryController = {
@@ -329,18 +433,24 @@ const EmployeeCategoryController = {
     try {
       const { categoryName, isActive, roles } = req.body;
       if (!categoryName) {
-        res.status(404).json({ message: "Category Name is Needed" })
+        res.status(404).json({ message: "Category Name is Needed" });
       }
-      const uppercaseCategoryName = categoryName.toUpperCase()
-      const existingCategory = await EmployeeRole.findOne({ categoryName: uppercaseCategoryName });
+      const uppercaseCategoryName = categoryName.toUpperCase();
+      const existingCategory = await EmployeeRole.findOne({
+        categoryName: uppercaseCategoryName,
+      });
       if (existingCategory) {
         return res.status(409).json({ message: "Category already exists" });
       }
       const category = new EmployeeCategory({ categoryName, isActive, roles });
       await category.save();
-      res.status(201).json({ message: "Category created successfully", category });
+      res
+        .status(201)
+        .json({ message: "Category created successfully", category });
     } catch (error) {
-      res.status(500).json({ message: "Error creating category", error: error.message });
+      res
+        .status(500)
+        .json({ message: "Error creating category", error: error.message });
     }
   },
 
@@ -350,7 +460,9 @@ const EmployeeCategoryController = {
       const categories = await EmployeeCategory.find().populate("roles");
       res.status(200).json(categories);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching categories", error: error.message });
+      res
+        .status(500)
+        .json({ message: "Error fetching categories", error: error.message });
     }
   },
 
@@ -362,16 +474,27 @@ const EmployeeCategoryController = {
         res.status(404).json({ message: "Category not found" });
       }
       const updates = req.body;
-      const uppercaseCategoryName = updates.categoryName.toUpperCase()
-      const existingCategory = await EmployeeRole.findOne({ categoryName: uppercaseCategoryName });
+      const uppercaseCategoryName = updates.categoryName.toUpperCase();
+      const existingCategory = await EmployeeRole.findOne({
+        categoryName: uppercaseCategoryName,
+      });
       if (existingCategory) {
         return res.status(409).json({ message: "Category already exists" });
       }
-      const updatedCategory = await EmployeeCategory.findByIdAndUpdate(id, updates, { new: true }).populate("roles");
-      if (!updatedCategory) return res.status(404).json({ message: "Category not found" });
-      res.status(200).json({ message: "Category updated successfully", updatedCategory });
+      const updatedCategory = await EmployeeCategory.findByIdAndUpdate(
+        id,
+        updates,
+        { new: true }
+      ).populate("roles");
+      if (!updatedCategory)
+        return res.status(404).json({ message: "Category not found" });
+      res
+        .status(200)
+        .json({ message: "Category updated successfully", updatedCategory });
     } catch (error) {
-      res.status(500).json({ message: "Error updating category", error: error.message });
+      res
+        .status(500)
+        .json({ message: "Error updating category", error: error.message });
     }
   },
 
@@ -383,10 +506,13 @@ const EmployeeCategoryController = {
         res.status(404).json({ message: "Category not found" });
       }
       const deletedCategory = await EmployeeCategory.findByIdAndDelete(id);
-      if (!deletedCategory) return res.status(504).json({ message: "Something went wrong" });
+      if (!deletedCategory)
+        return res.status(504).json({ message: "Something went wrong" });
       res.status(200).json({ message: "Category deleted successfully" });
     } catch (error) {
-      res.status(500).json({ message: "Error deleting category", error: error.message });
+      res
+        .status(500)
+        .json({ message: "Error deleting category", error: error.message });
     }
   },
 
@@ -395,12 +521,15 @@ const EmployeeCategoryController = {
     try {
       const { id } = req.params;
       const category = await EmployeeCategory.findById(id);
-      if (!category) return res.status(404).json({ message: "Category not found" });
+      if (!category)
+        return res.status(404).json({ message: "Category not found" });
       category.isActive = !category.isActive;
       await category.save();
       res.status(200).json({ message: "Category status updated", category });
     } catch (error) {
-      res.status(500).json({ message: "Error updating status", error: error.message });
+      res
+        .status(500)
+        .json({ message: "Error updating status", error: error.message });
     }
   },
 
@@ -422,8 +551,11 @@ const EmployeeCategoryController = {
   //   } catch (error) {
   //     res.status(500).json({ message: "Error fetching category", error: error.message });
   //   }
-  // }, 
-
+  // },
 };
 
-module.exports = { EmployeeRoleController, EmployeeCategoryController, EmployeeController };
+module.exports = {
+  EmployeeRoleController,
+  EmployeeCategoryController,
+  EmployeeController,
+};
