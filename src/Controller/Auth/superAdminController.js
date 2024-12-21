@@ -1,4 +1,5 @@
 const superAdminModel = require("../../models/superAdmin.model");
+const employeeModel = require('../../models/employee.model');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { deleteImageFromS3, uploadImageToS3 } = require("../../services/AWS/s3Bucket");
@@ -41,39 +42,65 @@ module.exports.postSuperAdminSignup = async (req, res) => {
   }
 };
 
-module.exports.postSuperAdminLogin = async (req, res) => {
+
+module.exports.postLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validate request body
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    const superAdmin = await superAdminModel.findOne({ email });
-    if (!superAdmin) {
+    let user = null; // To store the logged-in user
+    let userType = null; // To differentiate between superAdmin and Employee
+
+    // First, check if the user is a superAdmin
+    user = await superAdminModel.findOne({ email });
+    if (user) {
+      userType = 'superAdmin';
+    } else {
+      // If not a superAdmin, check in the Employee collection
+      user = await employeeModel.findOne({ email });
+      if (user) {
+        userType = 'employee';
+      }
+    }
+
+    // If no user is found
+    if (!user) {
       return res.status(404).json({ message: 'No account found with this email address' });
     }
 
-    // Check password match
-    const passwordMatch = await bcrypt.compare(password, superAdmin.password);
+    // Check if the password matches
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
     if (!passwordMatch) {
       return res.status(401).json({ message: 'Incorrect password. Please try again' });
     }
 
-    // Set JWT tokens
-    const payload = { 
-      id: superAdmin._id, 
-      email: superAdmin.email,
-      userType: superAdmin.userType  // Add the userType here
+    // Prepare the payload for the JWT
+    const payload = {
+      id: user._id,
+      email: user.email,
+      userType: userType, // Indicate whether superAdmin or Employee
+      userName:user.userName,
+      ...(userType === 'employee' ? { category: user.category } : {}), // Include category if Employee
     };
+
+    // Generate access and refresh tokens
     const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
     const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
 
+    // Respond with the appropriate details
     return res.status(200).json({
-      message: "Login successful",
+      message: 'Login successful',
       accessToken,
       refreshToken,
-      superAdmin
+      userType,
+      userName:user.userName,
+      ...(userType === 'employee' && { category: user.category }), // Include category in the response if Employee
+
     });
   } catch (error) {
     console.error('Error during login:', error);

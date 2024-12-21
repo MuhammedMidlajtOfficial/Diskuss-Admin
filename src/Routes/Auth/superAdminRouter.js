@@ -6,7 +6,8 @@ const router = Router();
 router.get('/getSuperAdmin/:id', controller.getSuperAdmin);
 
 router.post('/superAdminSignup', controller.postSuperAdminSignup);
-router.post('/superAdminLogin', controller.postSuperAdminLogin);
+router.post('/superAdminLogin', controller.postLogin);
+
 
 router.patch('/updateSuperAdmin/:id', controller.updateSuperAdmin);
 
