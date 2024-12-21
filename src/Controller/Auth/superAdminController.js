@@ -99,8 +99,8 @@ module.exports.postLogin = async (req, res) => {
       refreshToken,
       userType,
       userName:user.userName,
+      user,
       ...(userType === 'employee' && { category: user.category }), // Include category in the response if Employee
-
     });
   } catch (error) {
     console.error('Error during login:', error);
