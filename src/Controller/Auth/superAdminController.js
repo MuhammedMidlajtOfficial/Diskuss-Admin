@@ -1,6 +1,7 @@
 const superAdminModel = require("../../models/superAdmin.model");
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const { deleteImageFromS3, uploadImageToS3 } = require("../../services/AWS/s3Bucket");
 require('dotenv').config();
 
 
@@ -76,6 +77,89 @@ module.exports.postSuperAdminLogin = async (req, res) => {
     });
   } catch (error) {
     console.error('Error during login:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports.getSuperAdmin = async (req, res) => {
+  try {
+    const { id: userId } = req.params;
+
+    // Check for missing fields
+    if ( !userId ) {
+      return res.status(400).json({ message: "userId is required in params" });
+    }
+
+    // Check if email exists
+    const userExist = await superAdminModel.findOne({ _id : userId }).exec();
+    // console.log('userId-',userId);
+    // console.log('userExist-',userExist);
+    if (!userExist) {
+      return res.status(409).json({ message: "A super admin with this userId not exists" });
+    }
+
+    return res.status(200).json({ user: userExist });
+  } catch (error) {
+    console.error('Error during signup:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports.updateSuperAdmin = async (req, res) => {
+  try {
+    const { username, image, address, phnNumber } = req.body;
+    const userId = req.params.id;
+    console.log("userId-",userId);
+    if( !userId ){
+      return res.status(404).json({ message: "User ID found" });
+    }
+
+    // Check if email exists
+    const isUserExist = await superAdminModel.findOne({ _id:userId }).exec();
+    if (!isUserExist) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let imageUrl = isUserExist.image;
+
+    // Upload image to S3 if a new image is provided
+    if (image) {
+      // Delete the old image from S3 (if exists)
+      if (isUserExist?.image) {
+        await deleteImageFromS3(isUserExist.image); // Delete the old image from S3
+      }
+      const imageBuffer = Buffer.from(image.replace(/^data:image\/\w+;base64,/, ""), 'base64');
+      const fileName = `${userId}-profile.jpg`; // Unique file name based on user ID and card ID
+      try {
+        const uploadResult = await uploadImageToS3(imageBuffer, fileName);
+        imageUrl = uploadResult.Location; // URL of the uploaded image
+      } catch (uploadError) {
+        console.log("Error uploading image to S3:", uploadError);
+        return res.status(500).json({ message: "Failed to upload image", error: uploadError });
+      }
+    }
+
+    // Update a new Super Admin
+    const updateSuperAdmin = await superAdminModel.updateOne(
+    { _id:userId },
+    {
+      username,
+      image: imageUrl,
+      address,
+      phnNumber,
+    });
+
+    if (updateSuperAdmin.modifiedCount > 0) {
+      return res.status(200).json({ message: "Super Admin updated successfully" });
+    } else if (updateSuperAdmin.matchedCount > 0) {
+      // Record exists but no changes were made
+      return res.status(304).json({ message: "No changes made to Super Admin details" });
+    } else {
+      // No matching record was found
+      return res.status(404).json({ message: "Super Admin not found" });
+    }
+  } catch (error) {
+    console.error('Error during signup:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };

@@ -6,6 +6,6 @@ const EmployeeCategorySchema = new mongoose.Schema({
     roles: [{ type: mongoose.Schema.Types.ObjectId, ref: 'EmployeeRole' }]
 }, { timestamps: true,
     collection: 'admin.category'
- });
+});
 
 module.exports = mongoose.model('EmployeeCategory', EmployeeCategorySchema);

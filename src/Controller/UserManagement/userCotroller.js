@@ -135,7 +135,6 @@ module.exports.addIndividualUser = async (req,res) =>{
         return res.status(500).json({ message: "Failed to upload image", error: uploadError });
       }
     }
-
     // Hash password
     const hashedPassword = await bcrypt.hash(passwordRaw, 10);
     // Create a new user

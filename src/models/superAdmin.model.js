@@ -13,6 +13,21 @@ const superAdmin = new mongoose.Schema({
     type: String,
     required: true
   },
+  image:{
+    type: String,
+    required: true,
+    default:""
+  },
+  address:{
+    type: String,
+    required: true,
+    default:""
+  },
+  phnNumber:{
+    type: String,
+    required: true,
+    default:""
+  },
   userType:{
     type: String,
     required: true,
