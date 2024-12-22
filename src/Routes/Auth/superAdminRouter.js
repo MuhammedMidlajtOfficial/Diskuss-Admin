@@ -1,15 +1,14 @@
 const { Router } = require('express');
 const controller = require('../../Controller/Auth/superAdminController');
-const { validateJwtToken } = require('../../Middlewares/validateJwtToken');
-
 const router = Router();
 
 // Public routes (no JWT validation required)
+router.get('/getSuperAdmin/:id', controller.getSuperAdmin);
+
 router.post('/superAdminSignup', controller.postSuperAdminSignup);
 router.post('/superAdminLogin', controller.postLogin);
 
 
-// Protected routes (Add JWT validation for these routes)
-router.get('/superAdminDashboard', validateJwtToken); // JWT validation applied here
+router.patch('/updateSuperAdmin/:id', controller.updateSuperAdmin);
 
 module.exports = router;

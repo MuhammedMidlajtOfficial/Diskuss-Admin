@@ -5,6 +5,7 @@ const { EmployeeRoleController, EmployeeCategoryController, EmployeeController }
 // Employee 
 router.post('/', EmployeeController.createEmployee);
 router.get('/', EmployeeController.getEmployees);
+router.get('/:employeeId', EmployeeController.getEmployeeById);
 router.put('/:employeeId', EmployeeController.updateEmployee);
 router.delete('/:employeeId', EmployeeController.deleteEmployee);
 
