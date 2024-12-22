@@ -2,7 +2,8 @@ const EmployeeCategory = require('../../models/employee.category.model');
 const EmployeeRole = require('../../models/employee.role.model');
 const Employee = require('../../models/employee.model')
 const { uploadImageToS3, deleteImageFromS3 } = require("../../services/AWS/s3Bucket");
-
+const nodemailer = require ('nodemailer')
+require("dotenv").config();
 
 const EmployeeController = {
 
@@ -39,6 +40,43 @@ const EmployeeController = {
         return res.status(509).json({ message: "Employee creation failed" });
       }
       await employee.save();
+
+          // Send an email to the newly created employee
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL, 
+      to: email,
+      subject: "Welcome to the Company!",
+      html: `
+        <h1>Welcome, ${userName}!</h1>
+        <p>We're excited to have you on board. Here are your details:</p>
+        <ul>
+          <li><strong>Email:</strong> ${email}</li>
+          <li><strong>Password:</strong> ${password}</li>
+          <li><strong>Phone Number:</strong> ${phoneNumber}</li>
+          <li><strong>Category:</strong> ${category}</li>
+          <li><strong>Profile Image:</strong> <a href="${imageUrl}">View Image</a></li>
+        </ul>
+        <p>Keep this information safe and feel free to contact us if you have any questions.</p>
+      `,
+    };
+
+    transporter.sendMail(mailOptions, (err, info) => {
+      if (err) {
+        console.log("Error sending email:", err);
+        return res.status(500).json({ message: "Employee created, but email failed", error: err.message });
+      }
+      console.log("Email sent:", info.response);
+    });
+
+
       return res.status(201).json({ message: "Employee created successfully", employee });
     } catch (error) {
       return res.status(500).json({ message: "Error creating employee", error: error.message });
