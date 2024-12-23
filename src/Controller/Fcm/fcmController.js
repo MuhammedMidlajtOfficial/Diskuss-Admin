@@ -164,15 +164,25 @@ exports.sendMeetingNotification = async (req, res) => {
       return res.status(400).json({ error: "No userIds provided." });
     }
 
+    const uniqueUserIds = [...new Set(userIds)]; // Deduplicate userIds
+    const processingSet = new Set(); // Declare the processing set here
+
     const notifications = await Promise.all(
-      userIds.map(async (userId) => {
+      uniqueUserIds.map(async (userId) => {
+        if (processingSet.has(userId)) {
+          return null; // Skip if already processing this userId
+        }
+        processingSet.add(userId); // Mark userId as being processed
+
         const fcmData = await fcmCollection.findOne({ userId });
 
         if (!fcmData || !fcmData.fcmId) {
           console.error(`FCM ID not found for userId: ${userId}`);
-          return null; // Skip if no FCM ID
+          processingSet.delete(userId); // Cleanup processing set
+          return null;
         }
 
+        console.log(`FCM Data for userId ${userId}:`, fcmData);
         const message = {
           notification: {
             title: notification.title,
@@ -183,13 +193,15 @@ exports.sendMeetingNotification = async (req, res) => {
           },
           token: fcmData.fcmId,
         };
-
+        
         try {
           const response = await admin.messaging().send(message);
           console.log(`Notification sent to userId: ${userId}`, response);
+          processingSet.delete(userId);
           return response;
         } catch (sendError) {
           console.error(`Error sending notification to userId: ${userId}`, sendError.message);
+          processingSet.delete(userId);
           return null;
         }
       })
