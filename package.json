@@ -22,6 +22,7 @@
     "mongodb": "^6.11.0",
     "mongoose": "^8.9.0",
     "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.16",
     "uuid": "^11.0.3"
   },
   "devDependencies": {

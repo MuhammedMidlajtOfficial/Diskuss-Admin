@@ -44,6 +44,52 @@ exports.handleSubscription = async (req, res) => {
   }
 };
 
+exports.handleSubscriptionExpiry = async (req, res) => {
+  const { fcmId, daysRemaining } = req.body;
+
+  if (!fcmId) {
+    return res.status(400).send("FCM ID is required.");
+  }
+
+  if (daysRemaining === undefined || daysRemaining < 0) {
+    return res.status(400).send("Days remaining must be specified and non-negative.");
+  }
+
+  try {
+    // Customize notification message based on remaining days
+    let notificationBody = "";
+    if (daysRemaining === 0) {
+      notificationBody = "Your subscription ends today. Renew now to continue enjoying premium features.";
+    } else if (daysRemaining <= 7) {
+      notificationBody = `Your subscription will expire in ${daysRemaining} day(s). Renew now to avoid interruption.`;
+    } else {
+      notificationBody = `Your subscription will expire soon. Renew now to continue enjoying premium features.`;
+    }
+
+    const message = {
+      notification: {
+        title: "Subscription Expiry Alert",
+        body: notificationBody,
+      },
+      data: {
+        notificationType: "subscription",
+        daysRemaining: daysRemaining.toString(),
+      },
+      token: fcmId, // Send to specific FCM ID
+    };
+
+    // Send the notification
+    const response = await admin.messaging().send(message);
+    console.log("Expiry notification sent:", response);
+    console.log("Message:", message);
+
+    res.status(200).send("Subscription expiry notification sent successfully.");
+  } catch (error) {
+    console.error("Error sending expiry notification:", error.message);
+    res.status(500).send("Failed to send subscription expiry notification.");
+  }
+};
+
 exports.sendMeetingAcceptanceNotification = async (req, res) => {
   const { userId, notification } = req.body;
 
@@ -76,7 +122,6 @@ exports.sendMeetingAcceptanceNotification = async (req, res) => {
       res.status(500).json({ error: "Failed to send meeting acceptance notification." });
   }
 };
-
 
 exports.sendMessageNotification = async (req, res) => {
   const { receiverId, senderName, content, chatId } = req.body;
@@ -156,7 +201,6 @@ exports.sendMeetingNotification = async (req, res) => {
     res.status(500).json({ error: "Failed to send notifications." });
   }
 };
-
 
 //Handle Login
 exports.handleLogin = async (req, res) => {
