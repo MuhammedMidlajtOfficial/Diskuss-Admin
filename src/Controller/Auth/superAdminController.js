@@ -25,23 +25,40 @@ module.exports.postSuperAdminSignup = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(passwordRaw, 10);
 
+    const category = [
+      'dashboard-overview',
+      'view-user-profile',
+      'manage-enterprise-user',
+      'manage-subscription-plans',
+      'card-share-interaction',
+      'user-activity-reports',
+      'view-payment-history',
+      'generate-invoice',
+      'view-respond-tickets',
+      'send-notification',
+      'create-employee',
+      'ticket-categories',
+      'assign-tickets'
+    ]
+
     // Create a new Super Admin
     const newSuperAdmin = await superAdminModel.create({
       username,
       email,
       password: hashedPassword,
+      category
     });
 
     return res.status(201).json({
       message: "Super admin created",
-      superAdmin: newSuperAdmin
+      superAdmin: newSuperAdmin,
+
     });
   } catch (error) {
     console.error('Error during signup:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
-
 
 module.exports.postLogin = async (req, res) => {
   try {
@@ -84,8 +101,8 @@ module.exports.postLogin = async (req, res) => {
       id: user._id,
       email: user.email,
       userType: userType, // Indicate whether superAdmin or Employee
-      userName:user.userName,
-      ...(userType === 'employee' ? { category: user.category } : {}), // Include category if Employee
+      username:user.username,
+      category: user.category,
     };
 
     // Generate access and refresh tokens
@@ -98,9 +115,9 @@ module.exports.postLogin = async (req, res) => {
       accessToken,
       refreshToken,
       userType,
-      userName:user.userName,
+      username:user.username,
       user,
-      ...(userType === 'employee' && { category: user.category }), // Include category in the response if Employee
+      category: user.category
     });
   } catch (error) {
     console.error('Error during login:', error);
@@ -113,50 +130,66 @@ module.exports.getSuperAdmin = async (req, res) => {
     const { id: userId } = req.params;
 
     // Check for missing fields
-    if ( !userId ) {
+    if (!userId) {
       return res.status(400).json({ message: "userId is required in params" });
     }
 
-    // Check if email exists
-    const userExist = await superAdminModel.findOne({ _id : userId }).exec();
-    // console.log('userId-',userId);
-    // console.log('userExist-',userExist);
+    // Find user in superAdminModel
+    let userExist = await superAdminModel.findOne({ _id: userId }).exec();
+
+    // If not found, check in employeeModel
     if (!userExist) {
-      return res.status(409).json({ message: "A super admin with this userId not exists" });
+      userExist = await employeeModel.findOne({ _id: userId }).exec();
     }
 
+    // If user still not found, return an error response
+    if (!userExist) {
+      return res.status(404).json({ message: "No user found with the provided userId" });
+    }
+
+    console.log('userExist-', userExist);
     return res.status(200).json({ user: userExist });
   } catch (error) {
-    console.error('Error during signup:', error);
+    console.error('Error during getSuperAdmin:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
 
-module.exports.updateSuperAdmin = async (req, res) => {
+module.exports.updateUser = async (req, res) => {
   try {
-    const { username, image, address, phnNumber } = req.body;
+    const { username, image, address, phnNumber, userType } = req.body;
     const userId = req.params.id;
-    console.log("userId-",userId);
-    if( !userId ){
-      return res.status(404).json({ message: "User ID found" });
+    console.log("userType-", userType);
+
+    if (!userId) {
+      return res.status(404).json({ message: "User ID not found" });
     }
 
-    // Check if email exists
-    const isUserExist = await superAdminModel.findOne({ _id:userId }).exec();
-    if (!isUserExist) {
-      return res.status(404).json({ message: "User not found" });
+    // Check if the user exists in the appropriate model based on userType
+    let userExist;
+
+    if (userType === 'SuperAdmin') {
+      userExist = await superAdminModel.findOne({ _id: userId }).exec();
+    } else if (userType === 'Employee') {
+      userExist = await employeeModel.findOne({ _id: userId }).exec();
     }
 
-    let imageUrl = isUserExist.image;
+    console.log('userExist-',userExist);
 
+    if (!userExist) {
+      return res.status(404).json({ message: `${userType} not found` });
+    }
+
+    let imageUrl = userExist?.image;
+    
     // Upload image to S3 if a new image is provided
     if (image) {
       // Delete the old image from S3 (if exists)
-      if (isUserExist?.image) {
-        await deleteImageFromS3(isUserExist.image); // Delete the old image from S3
+      if (userExist?.image) {
+        await deleteImageFromS3(userExist.image); // Delete the old image from S3
       }
       const imageBuffer = Buffer.from(image.replace(/^data:image\/\w+;base64,/, ""), 'base64');
-      const fileName = `${userId}-profile.jpg`; // Unique file name based on user ID and card ID
+      const fileName = `${userId}-${Date.now()}-profile.jpg`; // Unique file name based on user ID
       try {
         const uploadResult = await uploadImageToS3(imageBuffer, fileName);
         imageUrl = uploadResult.Location; // URL of the uploaded image
@@ -166,27 +199,73 @@ module.exports.updateSuperAdmin = async (req, res) => {
       }
     }
 
-    // Update a new Super Admin
-    const updateSuperAdmin = await superAdminModel.updateOne(
-    { _id:userId },
-    {
-      username,
-      image: imageUrl,
-      address,
-      phnNumber,
-    });
+    // Update the user based on the userType
+    let updateResult;
+    if (userType === 'SuperAdmin') {
+      updateResult = await superAdminModel.updateOne(
+        { _id: userId },
+        {
+          username,
+          image: imageUrl,
+          address,
+          phnNumber,
+        }
+      );
+    } else if (userType === 'Employee') {
+      updateResult = await employeeModel.updateOne(
+        { _id: userId },
+        {
+          username,
+          image: imageUrl,
+          address,
+          phnNumber,
+        }
+      );
+    }
 
-    if (updateSuperAdmin.modifiedCount > 0) {
-      return res.status(200).json({ message: "Super Admin updated successfully" });
-    } else if (updateSuperAdmin.matchedCount > 0) {
-      // Record exists but no changes were made
-      return res.status(304).json({ message: "No changes made to Super Admin details" });
+    if (updateResult.modifiedCount > 0) {
+      return res.status(200).json({ message: `${userType} updated successfully` });
     } else {
       // No matching record was found
-      return res.status(404).json({ message: "Super Admin not found" });
+      return res.status(200).json({ message: `No changes made to ${userType} details` });
     }
   } catch (error) {
-    console.error('Error during signup:', error);
+    console.error('Error during update:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports.updateUserPassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword} = req.body
+    const { id: userId } = req.params;
+
+    // Check for missing fields
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required in params" });
+    }
+
+    // Find user in superAdminModel
+    let userExist = await superAdminModel.findOne({ _id: userId }).exec();
+
+    // If not found, check in employeeModel
+    if (!userExist) {
+      userExist = await employeeModel.findOne({ _id: userId }).exec();
+    }
+
+    // If user still not found, return an error response
+    if (!userExist) {
+      return res.status(404).json({ message: "No user found with the provided userId" });
+    }
+
+    // if( userExist.userType === 'SuperAdmin' ){
+    //   const passwordMatch = 
+    // }
+
+    console.log('userExist-', userExist);
+    return res.status(200).json({ user: userExist });
+  } catch (error) {
+    console.error('Error during getSuperAdmin:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };

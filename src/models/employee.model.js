@@ -3,11 +3,20 @@ const bcrypt = require('bcrypt')
 // const jwt = require('jsonwebtoken')
 
 const EmployeeSchema = new mongoose.Schema({
-    userName: { type: String, required: true },
+    username: { type: String, required: true },
     image: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    phoneNumber: { type: String, required: true },
+    phnNumber: { type: String, required: true },
+    userType:{
+      type: String,
+      required: true,
+      default: 'Employee'
+    },
+    address:{
+      type: String,
+      default:""
+    },
     category: [{ type: String, required: true}],
 }, { timestamps: true });
 

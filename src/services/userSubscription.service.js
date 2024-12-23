@@ -31,7 +31,7 @@ const findAllWithUserDetails = async () => {
                 name: enterpriseUser ? enterpriseUser.companyName : individualUser.username,
                 image: userDetails.image,
                 email: userDetails.email,
-                phoneNumber: userDetails.phnNumber,
+                phnNumber: userDetails.phnNumber,
                 address: userDetails.address,
               }
             : null,
@@ -77,7 +77,7 @@ const findByIdWithUserDetails = async (subscriptionId) => {
             name: enterpriseUser ? enterpriseUser.companyName : individualUser.username,
             image: userDetails.image,
             email: userDetails.email,
-            phoneNumber: userDetails.phnNumber,
+            phnNumber: userDetails.phnNumber,
             address: userDetails.address,
           }
         : null,

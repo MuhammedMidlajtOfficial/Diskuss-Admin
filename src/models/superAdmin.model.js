@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const superAdmin = new mongoose.Schema({
-  userName:{
+  username:{
     type: String,
     required: true
   },
@@ -15,23 +15,25 @@ const superAdmin = new mongoose.Schema({
   },
   image:{
     type: String,
-    required: true,
     default:""
   },
   address:{
     type: String,
-    required: true,
     default:""
   },
   phnNumber:{
     type: String,
-    required: true,
     default:""
   },
   userType:{
     type: String,
     required: true,
     default: 'SuperAdmin'
+  },
+  category:{
+    type: Array,
+    required: true,
+    default: []
   },
 });
 

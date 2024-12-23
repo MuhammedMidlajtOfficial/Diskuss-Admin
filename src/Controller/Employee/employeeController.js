@@ -10,14 +10,14 @@ const EmployeeController = {
   // Creating employee
   createEmployee: async (req, res) => {
     try {
-      const { userName, image, email, password, phoneNumber, category } =
+      const { username, image, email, password, phnNumber, category } =
         req.body;
       if (
-        !userName ||
+        !username ||
         !image ||
         !email ||
         !password ||
-        !phoneNumber ||
+        !phnNumber ||
         !category
       ) {
         return res.status(400).json({ message: "All fields must be present" });
@@ -34,7 +34,7 @@ const EmployeeController = {
           image.replace(/^data:image\/\w+;base64,/, ""),
           "base64"
         );
-        const fileName = `${Date.now()}-${userName}-employee-profile.jpg`;
+        const fileName = `${Date.now()}-${username}-employee-profile.jpg`;
         try {
           const uploadResult = await uploadImageToS3(imageBuffer, fileName);
           imageUrl = uploadResult.Location;
@@ -47,11 +47,11 @@ const EmployeeController = {
         }
       }
       const employee = new Employee({
-        userName,
+        username,
         image: imageUrl,
         email,
         password,
-        phoneNumber,
+        phnNumber,
         category,
       });
       console.log("emp:", employee);
@@ -166,7 +166,7 @@ const EmployeeController = {
           image.replace(/^data:image\/\w+;base64,/, ""),
           "base64"
         );
-        const fileName = `${Date.now()}-${employee.userName}-employee-profile.jpg`;
+        const fileName = `${Date.now()}-${employee.username}-employee-profile.jpg`;
         try {
           const uploadResult = await uploadImageToS3(imageBuffer, fileName);
           imageUrl = uploadResult.Location;
@@ -284,9 +284,9 @@ const EmployeeController = {
   //       employee: {
   //         id: employee._id,
   //         fullName: employee.fullName,
-  //         userName: employee.userName,
+  //         username: employee.username,
   //         email: employee.email,
-  //         phoneNumber: employee.phoneNumber,
+  //         phnNumber: employee.phnNumber,
   //         category: employee.category,
   //         userImage: employee.userImage,
   //       },
