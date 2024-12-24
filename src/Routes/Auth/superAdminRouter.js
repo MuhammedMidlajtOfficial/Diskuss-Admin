@@ -9,6 +9,6 @@ router.post('/superAdminSignup', controller.postSuperAdminSignup);
 router.post('/superAdminLogin', controller.postLogin);
 
 
-router.patch('/updateSuperAdmin/:id', controller.updateSuperAdmin);
+router.patch('/updateUser/:id', controller.updateUser);
 
 module.exports = router;
