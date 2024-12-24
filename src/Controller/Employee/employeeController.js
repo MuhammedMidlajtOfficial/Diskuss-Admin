@@ -2,7 +2,8 @@ const EmployeeCategory = require('../../models/employee.category.model');
 const EmployeeRole = require('../../models/employee.role.model');
 const Employee = require('../../models/employee.model')
 const { uploadImageToS3, deleteImageFromS3 } = require("../../services/AWS/s3Bucket");
-const nodemailer = require ('nodemailer')
+const nodemailer = require ('nodemailer');
+const bcrypt = require('bcrypt');
 require("dotenv").config();
 
 
@@ -46,11 +47,14 @@ const EmployeeController = {
             .json({ message: "Failed to upload image", error: uploadError });
         }
       }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       const employee = new Employee({
         username,
         image: imageUrl,
         email,
-        password,
+        password:hashedPassword,
         phnNumber,
         category,
       });
