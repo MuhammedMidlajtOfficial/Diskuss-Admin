@@ -20,12 +20,12 @@ const EmployeeSchema = new mongoose.Schema({
     category: [{ type: String, required: true}],
 }, { timestamps: true });
 
-EmployeeSchema.pre('save', async function (next) {
-    if (this.isModified('password')) {
-        this.password = await bcrypt.hash(this.password, 10)
-    }
-    next()
-})
+// EmployeeSchema.pre('save', async function (next) {
+//     if (this.isModified('password')) {
+//         this.password = await bcrypt.hash(this.password, 10)
+//     }
+//     next()
+// })
 
 EmployeeSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password)
