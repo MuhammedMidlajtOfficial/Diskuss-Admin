@@ -11,4 +11,14 @@ router.post('/superAdminLogin', controller.postLogin);
 
 router.patch('/updateUser/:id', controller.updateUser);
 
+router.patch('/updateUserPassword/:id', controller.updateUserPassword);
+
+router.post('/forgotPassword/request-otp', controller.forgotPasswordRequestOtp);
+router.post('/forgotPassword/validate-otp', controller.forgotPasswordValidateOtp);
+router.post('/forgotPassword/reset-password', controller.forgotPasswordReset);
+
+
+
+
+
 module.exports = router;
