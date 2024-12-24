@@ -3,6 +3,8 @@ const employeeModel = require('../../models/employee.model');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { deleteImageFromS3, uploadImageToS3 } = require("../../services/AWS/s3Bucket");
+const { otpCollection } = require("../../models/otpModule");
+const { templates } = require("../../services/Email/email.service");
 require('dotenv').config();
 
 
@@ -62,7 +64,7 @@ module.exports.postSuperAdminSignup = async (req, res) => {
 
 module.exports.postLogin = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password,rememberMe } = req.body;
 
     // Validate request body
     if (!email || !password) {
@@ -105,9 +107,11 @@ module.exports.postLogin = async (req, res) => {
       category: user.category,
     };
 
+    const refreshTokenExpiration = rememberMe ? "7d" : "1d"; 
+
     // Generate access and refresh tokens
-    const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
-    const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+    const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, );
+    const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, );
 
     // Respond with the appropriate details
     return res.status(200).json({
@@ -240,6 +244,10 @@ module.exports.updateUserPassword = async (req, res) => {
     const { oldPassword, newPassword} = req.body
     const { id: userId } = req.params;
 
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ message: "Both Old Password and New Password are required"});
+    }
+
     // Check for missing fields
     if (!userId) {
       return res.status(400).json({ message: "userId is required in params" });
@@ -258,14 +266,151 @@ module.exports.updateUserPassword = async (req, res) => {
       return res.status(404).json({ message: "No user found with the provided userId" });
     }
 
-    // if( userExist.userType === 'SuperAdmin' ){
-    //   const passwordMatch = 
-    // }
+    const passwordMatched = await bcrypt.compare(oldPassword, userExist.password);
 
-    console.log('userExist-', userExist);
-    return res.status(200).json({ user: userExist });
+    if (!passwordMatched) {
+      return res.status(401).json({ message: "Incorrect password. Please try again"});
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    userExist.password = hashedPassword;
+    await userExist.save();
+
+    return res.status(200).json({ message: "Password updated successfully" });
   } catch (error) {
     console.error('Error during getSuperAdmin:', error);
     return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+module.exports.forgotPasswordRequestOtp = async (req, res) => {
+  try {
+    
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    let user = await superAdminModel.findOne({ email });
+
+    if (!user) {
+      user = await employeeModel.findOne({ email }).exec();
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "No user found with the provided Email" });
+    }
+
+    await otpCollection.deleteMany({ email });
+
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    console.log("generated otp is ",otp);
+
+    // Save OTP to record
+    const newOTP = new  otpCollection({ email, otp });
+    await newOTP.save()
+
+    return res.status(200).json({message: "OTP sent successfully to your email"});
+  } catch (error) {
+    console.error("Error in requestOTP controller:", error);
+    return res.status(500).json({
+      message: "Failed to send OTP. Please try again",
+      error: error.message,
+    });
+  }
+};
+
+
+module.exports.forgotPasswordValidateOtp = async (req, res) => {
+  try {
+    const { email,otp } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    if (!otp) {
+      return res.status(400).json({ message: "OTP is required" });
+    }
+
+    let user = await superAdminModel.findOne({ email });
+
+    if (!user) {
+      user = await employeeModel.findOne({ email }).exec();
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "No user found with the provided Email" });
+    }
+
+    const validOTP = await otpCollection.findOne({ email, otp });
+
+    if (!validOTP) {
+      return res.status(400).json({ message: "Invalid OTP or OTP expired." });
+    }
+
+    const payload = {
+      email:email,
+      type: "reset-password"
+    }
+
+    const token = jwt.sign(payload,process.env.OTP_TOKEN_SECRET,{expiresIn:"10m"})
+
+    return res.status(200).json({ message: "OTP verified successfully",token });
+  } catch (error) {
+    console.error("Error in OTP verification:", error);
+    return res.status(500).json({ message: "An error occurred while verifying OTP. Please try again later." });
+  }
+};
+
+module.exports.forgotPasswordReset = async (req, res) => {
+  try {
+    const { token,newPassword } = req.body;
+
+    if(!token){
+      return res.status(400).json({ message: "Unable to validate the User,Please Try again!" });
+    }
+
+    if (!newPassword) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+
+    let decodedToken;
+    try {
+      decodedToken = jwt.verify(token, process.env.OTP_TOKEN_SECRET);
+    } catch (error) {
+      console.error("not verified ",error)
+      return res.status(400).json({message:"The time to reset your password has expired. Please request a new OTP to continue"});
+    }
+
+    if (decodedToken.type !== "reset-password") {
+      return res.status(400).json({ message: "Invalid token type" });
+    }
+
+    let user = await superAdminModel.findOne({ email:decodedToken.email });
+
+    if (!user) {
+      user = await employeeModel.findOne({ email:decodedToken.email}).exec();
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "No user found with the provided Email" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    await otpCollection.deleteOne({ email: decodedToken.email });
+
+    return res.status(200).json({ message: "Password Reset successfully." });
+  } catch (error) {
+    console.error("Error in OTP verification:", error);
+    return res.status(500).json({ message: "An error occurred while verifying OTP. Please try again later." });
   }
 };
