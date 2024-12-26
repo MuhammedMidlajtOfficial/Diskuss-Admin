@@ -79,12 +79,12 @@ const EmployeeController = {
       to: email,
       subject: "Welcome to the Company!",
       html: `
-        <h1>Welcome, ${userName}!</h1>
+        <h1>Welcome, ${username}!</h1>
         <p>We're excited to have you on board. Here are your details:</p>
         <ul>
           <li><strong>Email:</strong> ${email}</li>
           <li><strong>Password:</strong> ${password}</li>
-          <li><strong>Phone Number:</strong> ${phoneNumber}</li>
+          <li><strong>Phone Number:</strong> ${phnNumber}</li>
           <li><strong>Category:</strong> ${category}</li>
           <li><strong>Profile Image:</strong> <a href="${imageUrl}">View Image</a></li>
         </ul>

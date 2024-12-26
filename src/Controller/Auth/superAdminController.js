@@ -151,13 +151,49 @@ module.exports.getSuperAdmin = async (req, res) => {
       return res.status(404).json({ message: "No user found with the provided userId" });
     }
 
-    console.log('userExist-', userExist);
+    // console.log('userExist-', userExist);
     return res.status(200).json({ user: userExist });
   } catch (error) {
     console.error('Error during getSuperAdmin:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
+module.exports.getUserByCategory = async (req, res) => {
+  try {
+    const { category } = req.query;
+
+    // Check for missing fields
+    if (!category) {
+      return res.status(400).json({ message: "category is required in query" });
+    }
+
+    // Define a function to search in a model
+    const findUserByCategory = async (model) => {
+      return await model.findOne({ category: { $in: [category] } }).exec();
+    };
+
+    // // Try to find the user in superAdminModel first
+    // let userExist = await findUserByCategory(superAdminModel);
+
+    // If not found, try in employeeModel
+    // if (!userExist) {
+      userExist = await findUserByCategory(employeeModel);
+    // }
+
+    // If user is still not found, return an error response
+    if (!userExist) {
+      return res.status(404).json({ message: "No user found with the provided userId and category" });
+    }
+
+    // Return the found user
+    return res.status(200).json({ user: userExist });
+  } catch (error) {
+    console.error('Error during getUserByCategory:', error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 module.exports.updateUser = async (req, res) => {
   try {
@@ -178,7 +214,7 @@ module.exports.updateUser = async (req, res) => {
       userExist = await employeeModel.findOne({ _id: userId }).exec();
     }
 
-    console.log('userExist-',userExist);
+    // console.log('userExist-',userExist);
 
     if (!userExist) {
       return res.status(404).json({ message: `${userType} not found` });
@@ -284,7 +320,6 @@ module.exports.updateUserPassword = async (req, res) => {
   }
 };
 
-
 module.exports.forgotPasswordRequestOtp = async (req, res) => {
   try {
     
@@ -323,7 +358,6 @@ module.exports.forgotPasswordRequestOtp = async (req, res) => {
     });
   }
 };
-
 
 module.exports.forgotPasswordValidateOtp = async (req, res) => {
   try {
