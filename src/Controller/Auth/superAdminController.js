@@ -170,7 +170,7 @@ module.exports.getUserByCategory = async (req, res) => {
 
     // Define a function to search in a model
     const findUserByCategory = async (model) => {
-      return await model.findOne({ category: { $in: [category] } }).exec();
+      return await model.find({ category: { $in: [category] } }).exec();
     };
 
     // // Try to find the user in superAdminModel first
