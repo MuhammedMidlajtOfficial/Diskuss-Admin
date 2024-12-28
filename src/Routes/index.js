@@ -9,6 +9,7 @@ const EmployeeRouter = require("./Employee/employeeRouter")
 const invoiceRouter = require("./Invoice/invoiceRouter");
 const analyticRouter = require("./Analytic/analyticRouter")
 const superAdminAuth = require("./Auth/superAdminRouter");
+const watiRoute = require("./Wati/watiRoute");
 const { validateJwtToken } = require("../Middlewares/validateJwtToken");
 
 
@@ -66,6 +67,10 @@ const defaultRoutes = [
     {
         path: '/adminAuth',
         route: superAdminAuth
+    },
+    {
+        path: '/wati',
+        route: watiRoute
     },
 
 ];
