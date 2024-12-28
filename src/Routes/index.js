@@ -20,7 +20,8 @@ router.use((req, res, next) => {
     console.log("originalUrl from validateJwtToken - ",req.originalUrl);
     if (
         req.originalUrl.startsWith("/api/v1/adminAuth") ||
-        req.originalUrl.startsWith("/api/v1/fcm")
+        req.originalUrl.startsWith("/api/v1/fcm") ||
+        req.originalUrl.startsWith("/api/v1/wati")
     ) {
         return next(); // Skip validation for /adminAuth and /fcm
     }
