@@ -162,7 +162,6 @@ module.exports.getSuperAdmin = async (req, res) => {
 module.exports.getUserByCategory = async (req, res) => {
   try {
     const { category } = req.query;
-
     // Check for missing fields
     if (!category) {
       return res.status(400).json({ message: "category is required in query" });
@@ -170,20 +169,20 @@ module.exports.getUserByCategory = async (req, res) => {
 
     // Define a function to search in a model
     const findUserByCategory = async (model) => {
-      return await model.find({ category: { $in: [category] } }).exec();
+      return await model.find({ category: { $in: [category] } }).select('_id username').exec();
     };
 
-    // // Try to find the user in superAdminModel first
+    // Try to find the user in superAdminModel first
     // let userExist = await findUserByCategory(superAdminModel);
 
     // If not found, try in employeeModel
     // if (!userExist) {
-      userExist = await findUserByCategory(employeeModel);
+    const userExist = await findUserByCategory(employeeModel);
     // }
 
     // If user is still not found, return an error response
-    if (!userExist) {
-      return res.status(404).json({ message: "No user found with the provided userId and category" });
+    if (!userExist || userExist.length === 0) {
+      return res.status(404).json({ message: "No user found with the provided category" });
     }
 
     // Return the found user
@@ -193,6 +192,7 @@ module.exports.getUserByCategory = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 module.exports.updateUser = async (req, res) => {
