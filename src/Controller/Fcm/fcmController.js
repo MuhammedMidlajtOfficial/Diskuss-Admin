@@ -193,59 +193,62 @@ exports.sendMeetingNotification = async (req, res) => {
     }
 
     const uniqueUserIds = [...new Set(userIds)]; // Deduplicate userIds
-    const processingSet = new Set(); // Declare the processing set here
 
     const notifications = await Promise.all(
       uniqueUserIds.map(async (userId) => {
-        if (processingSet.has(userId)) {
-          return null; // Skip if already processing this userId
-        }
-        processingSet.add(userId); // Mark userId as being processed
-
-        const fcmData = await fcmCollection.findOne({ userId });
-
-        if (!fcmData || !fcmData.fcmId) {
-          console.error(`FCM ID not found for userId: ${userId}`);
-          processingSet.delete(userId); // Cleanup processing set
-          return null;
-        }
-
-        console.log(`FCM Data for userId ${userId}:`, fcmData);
-        const message = {
-          notification: {
-            title: notification.title,
-            body: notification.body,
-          },
-          data: {
-            notificationType: "meeting",
-          },
-          token: fcmData.fcmId,
-        };
-
         try {
-          const response = await admin.messaging().send(message);
-          console.log(`Notification sent to userId: ${userId}`, response);
-          processingSet.delete(userId);
-          return response;
-        } catch (sendError) {
-          console.error(
-            `Error sending notification to userId: ${userId}`,
-            sendError.message
-          );
-          processingSet.delete(userId);
+          // Fetch all FCM IDs for the user
+          const fcmDataList = await fcmCollection.find({ userId });
+
+          if (!fcmDataList || fcmDataList.length === 0) {
+            console.error(`No FCM tokens found for userId: ${userId}`);
+            return null;
+          }
+
+          console.log(`FCM Data for userId ${userId}:`, fcmDataList);
+
+          // Prepare and send notifications to all tokens
+          const sendPromises = fcmDataList.map(async (fcmData) => {
+            const message = {
+              notification: {
+                title: notification.title,
+                body: notification.body,
+              },
+              data: {
+                notificationType: "meeting",
+              },
+              token: fcmData.fcmId,
+            };
+
+            try {
+              const response = await admin.messaging().send(message);
+              console.log(`Notification sent to token: ${fcmData.fcmId}`, response);
+              return response;
+            } catch (sendError) {
+              console.error(
+                `Error sending notification to token: ${fcmData.fcmId}`,
+                sendError.message
+              );
+              return null;
+            }
+          });
+
+          // Await all send operations for the current userId
+          return await Promise.all(sendPromises);
+        } catch (error) {
+          console.error(`Error processing userId: ${userId}`, error.message);
           return null;
         }
       })
     );
 
-    res
-      .status(200)
-      .json({ message: "Notifications sent.", details: notifications });
+    res.status(200).json({ message: "Notifications sent.", details: notifications });
   } catch (error) {
     console.error("Error sending notifications:", error.message);
     res.status(500).json({ error: "Failed to send notifications." });
   }
 };
+
 
 //Handle Login
 exports.handleLogin = async (req, res) => {
