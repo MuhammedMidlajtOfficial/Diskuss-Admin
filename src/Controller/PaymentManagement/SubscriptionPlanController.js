@@ -108,30 +108,26 @@ const getSubscriptionPlanByPlanId = async (req, res) => {
  * }
  */
 const createSubscriptionPlan = async (req,res)=>{
-
     try {
-        
-         // Destructure plan data from the request body
-    const { name, price, features,type, duration } = req.body;
+      // Destructure plan data from the request body
+      const { name, price, features, duration } = req.body;
+      console.log(req.body);
+      // Check if required fields are provided
+      if (!name || !price || !duration) {
+        return res.status(400).json({ message: "Name, price and duration are required." });
+      }
 
-    // Check if required fields are provided
-    if (!name || !price || ! duration || ! type) {
+      // Prepare planData to pass to the function
+      const planData = { name, price, features, duration };
 
-      return res.status(400).json({ message: "Name, price and duration are required." });
-    }
+      // Call the function to create a SubscriptionPlan plan
+      const newPlan = await SubscriptionPlanService.createSubscriptionPlan(planData);
 
-    // Prepare planData to pass to the function
-    const planData = { name, price, features,type, duration };
-
-    // Call the function to create a SubscriptionPlan plan
-    const newPlan = await SubscriptionPlanService.createSubscriptionPlan(planData);
-
-    // Respond with success and the created plan
-    res.status(201).json({ message: "Subscription Plan created successfully", plan: newPlan });
-        
-
+      // Respond with success and the created plan
+      res.status(201).json({ message: "Subscription Plan created successfully", plan: newPlan });
     } catch (e) {
-        return res.status(500).json({ error: e.message });
+      console.log(e);
+      return res.status(500).json({ error: e.message });
     }
 }
 

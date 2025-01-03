@@ -112,13 +112,25 @@ const EmployeeController = {
   // Getting all employees
   getEmployees: async (req, res) => {
     try {
-      const { page = 1, limit = 10 } = req.query;
-      const totalEmployees = await Employee.countDocuments();
-      const employees = await Employee.find()
+      const { page = 1, limit = 10, search = "" } = req.query;
+      
+      // Build the search query (this example searches for username or email)
+      const searchQuery = search
+        ? { $or: [
+            { username: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } },
+          ] }
+        : {};
+  
+      // Count total employees matching the search query
+      const totalEmployees = await Employee.countDocuments(searchQuery);
+      
+      // Get the employees based on the search query, with pagination
+      const employees = await Employee.find(searchQuery)
         .sort({ createdAt: -1 })
         .limit(limit * 1)
         .skip((page - 1) * limit);
-
+  
       res.status(200).json({
         success: true,
         page: Number(page),
@@ -128,11 +140,12 @@ const EmployeeController = {
       });
     } catch (error) {
       console.error("Error fetching employees:", error.message);
-      res
-        .status(500)
-        .json({ message: "Error fetching employees", error: error.message });
+      res.status(500).json({
+        message: "Error fetching employees",
+        error: error.message,
+      });
     }
-  },
+  },  
 
   // Getting an employee by ID
   getEmployeeById: async (req, res) => {
