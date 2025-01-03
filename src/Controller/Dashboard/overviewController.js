@@ -104,8 +104,13 @@ module.exports.getFailedPayment = async (req, res) => {
 
 module.exports.getActiveUsers = async (req, res) => {
   try {
-    const uniqueSubscribedUsers = await userSubscriptionModel.distinct('userId', { status: 'active' });
-    const activeUsersCount = uniqueSubscribedUsers.length;
+    const individualCount = await individualUser.countDocuments({status: 'active'});
+    
+    const enterpriseCount = await enterpriseUser.countDocuments({status: 'active'});
+    
+    const enterpriseEmployeCount = await enterpriseEmployeModel.countDocuments({status: 'active'});
+
+    const activeUsersCount = individualCount+enterpriseCount+enterpriseEmployeCount;
 
     return res.status(200).json({ activeUsersCount });
   } catch (error) {
