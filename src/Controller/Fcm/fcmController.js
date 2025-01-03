@@ -1,10 +1,12 @@
 const fcmCollection = require("../../models/fcm.model");
-const { subscribeToTopic, unsubscribeFromTopic } = require("../../Utils/topicUtils");
-const User = require ("../../models/individualUser")
-const enterpriseUser = require ("../../models/enterpriseUser")
-const enterpriseEmploye = require ("../../models/enterpriseEmploye.model")
-const admin = require ("../../firebaseConfig")
-
+const {
+  subscribeToTopic,
+  unsubscribeFromTopic,
+} = require("../../Utils/topicUtils");
+const User = require("../../models/individualUser");
+const enterpriseUser = require("../../models/enterpriseUser");
+const enterpriseEmploye = require("../../models/enterpriseEmploye.model");
+const admin = require("../../firebaseConfig");
 
 // Handle Subscription Notification
 exports.handleSubscription = async (req, res) => {
@@ -31,8 +33,7 @@ exports.handleSubscription = async (req, res) => {
       // Send the notification
       const response = await admin.messaging().send(message);
       console.log("Subscription notification sent:", response);
-      console.log("message:",message);
-      
+      console.log("message:", message);
 
       res.status(200).send("Subscription notification sent successfully.");
     } else {
@@ -52,14 +53,17 @@ exports.handleSubscriptionExpiry = async (req, res) => {
   }
 
   if (daysRemaining === undefined || daysRemaining < 0) {
-    return res.status(400).send("Days remaining must be specified and non-negative.");
+    return res
+      .status(400)
+      .send("Days remaining must be specified and non-negative.");
   }
 
   try {
     // Customize notification message based on remaining days
     let notificationBody = "";
     if (daysRemaining === 0) {
-      notificationBody = "Your subscription ends today. Renew now to continue enjoying premium features.";
+      notificationBody =
+        "Your subscription ends today. Renew now to continue enjoying premium features.";
     } else if (daysRemaining <= 7) {
       notificationBody = `Your subscription will expire in ${daysRemaining} day(s). Renew now to avoid interruption.`;
     } else {
@@ -94,32 +98,50 @@ exports.sendMeetingAcceptanceNotification = async (req, res) => {
   const { userId, notification } = req.body;
 
   if (!userId) {
-      return res.status(400).json({ error: "userId is required." });
+    return res.status(400).json({ error: "userId is required." });
   }
 
   if (!notification || !notification.title || !notification.body) {
-      return res.status(400).json({ error: "Notification with title and body is required." });
+    return res
+      .status(400)
+      .json({ error: "Notification with title and body is required." });
   }
 
   try {
-      const fcmData = await fcmCollection.findOne({ userId });
+    const fcmDataList = await fcmCollection.find({ userId });
+console.log(fcmDataList);
 
-      if (!fcmData || !fcmData.fcmId) {
-          return res.status(404).json({ error: "FCM ID not found for the user." });
-      }
+    if (!fcmDataList || fcmDataList.length === 0) {
+      return res.status(404).json({ error: "FCM ID not found for the user." });
+    }
 
-      const message = {
-          notification,
-          token: fcmData.fcmId,
-      };
+    const message = fcmDataList.map((fcmData) => ({
+      notification,
+      token: fcmData.fcmId,
+    }));
 
-      const response = await admin.messaging().send(message);
-      console.log(`Meeting acceptance notification sent to userId: ${userId}`, response);
-
-      res.status(200).json({ message: "Meeting acceptance notification sent successfully.", response });
+    const sendPromises = message.map((message) =>
+      admin.messaging().send(message)
+    );
+    const response = await Promise.all(sendPromises);
+    console.log(
+      `Meeting acceptance notification sent to userId: ${userId}`,
+      response
+    );
+    res
+      .status(200)
+      .json({
+        message: "Meeting acceptance notification sent successfully.",
+        response,
+      });
   } catch (error) {
-      console.error("Error sending meeting acceptance notification:", error.message);
-      res.status(500).json({ error: "Failed to send meeting acceptance notification." });
+    console.error(
+      "Error sending meeting acceptance notification:",
+      error.message
+    );
+    res
+      .status(500)
+      .json({ error: "Failed to send meeting acceptance notification." });
   }
 };
 
@@ -127,14 +149,17 @@ exports.sendMessageNotification = async (req, res) => {
   const { receiverId, senderName, content, chatId } = req.body;
 
   try {
-    const fcmData = await fcmCollection.findOne({ userId: receiverId });
+    const fcmDataList = await fcmCollection.find({ userId: receiverId });
+    console.log("fcm:", fcmDataList);
 
-    if (!fcmData || !fcmData.fcmId) {
-      return res.status(404).json({ error: "FCM ID not found for receiver." });
+    if (!fcmDataList || fcmDataList.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No FCM tokens found for the receiver." });
     }
-    console.log("fcm Data",fcmData);
+    console.log("fcm Data", fcmDataList);
 
-    const message = {
+    const message = fcmDataList.map((fcmData) => ({
       notification: {
         title: `New message from ${senderName}`,
         body: content,
@@ -144,9 +169,12 @@ exports.sendMessageNotification = async (req, res) => {
         notificationType: "message",
       },
       token: fcmData.fcmId,
-    };
+    }));
 
-    const response = await admin.messaging().send(message);
+    const sendPromises = message.map((message) =>
+      admin.messaging().send(message)
+    );
+    const response = await Promise.all(sendPromises);
     console.log("Message notification sent:", response);
 
     res.status(200).json({ message: "Notification sent successfully." });
@@ -165,43 +193,50 @@ exports.sendMeetingNotification = async (req, res) => {
     }
 
     const uniqueUserIds = [...new Set(userIds)]; // Deduplicate userIds
-    const processingSet = new Set(); // Declare the processing set here
 
     const notifications = await Promise.all(
       uniqueUserIds.map(async (userId) => {
-        if (processingSet.has(userId)) {
-          return null; // Skip if already processing this userId
-        }
-        processingSet.add(userId); // Mark userId as being processed
-
-        const fcmData = await fcmCollection.findOne({ userId });
-
-        if (!fcmData || !fcmData.fcmId) {
-          console.error(`FCM ID not found for userId: ${userId}`);
-          processingSet.delete(userId); // Cleanup processing set
-          return null;
-        }
-
-        console.log(`FCM Data for userId ${userId}:`, fcmData);
-        const message = {
-          notification: {
-            title: notification.title,
-            body: notification.body,
-          },
-          data: {
-            notificationType: "meeting", 
-          },
-          token: fcmData.fcmId,
-        };
-        
         try {
-          const response = await admin.messaging().send(message);
-          console.log(`Notification sent to userId: ${userId}`, response);
-          processingSet.delete(userId);
-          return response;
-        } catch (sendError) {
-          console.error(`Error sending notification to userId: ${userId}`, sendError.message);
-          processingSet.delete(userId);
+          // Fetch all FCM IDs for the user
+          const fcmDataList = await fcmCollection.find({ userId });
+
+          if (!fcmDataList || fcmDataList.length === 0) {
+            console.error(`No FCM tokens found for userId: ${userId}`);
+            return null;
+          }
+
+          console.log(`FCM Data for userId ${userId}:`, fcmDataList);
+
+          // Prepare and send notifications to all tokens
+          const sendPromises = fcmDataList.map(async (fcmData) => {
+            const message = {
+              notification: {
+                title: notification.title,
+                body: notification.body,
+              },
+              data: {
+                notificationType: "meeting",
+              },
+              token: fcmData.fcmId,
+            };
+
+            try {
+              const response = await admin.messaging().send(message);
+              console.log(`Notification sent to token: ${fcmData.fcmId}`, response);
+              return response;
+            } catch (sendError) {
+              console.error(
+                `Error sending notification to token: ${fcmData.fcmId}`,
+                sendError.message
+              );
+              return null;
+            }
+          });
+
+          // Await all send operations for the current userId
+          return await Promise.all(sendPromises);
+        } catch (error) {
+          console.error(`Error processing userId: ${userId}`, error.message);
           return null;
         }
       })
@@ -213,6 +248,7 @@ exports.sendMeetingNotification = async (req, res) => {
     res.status(500).json({ error: "Failed to send notifications." });
   }
 };
+
 
 //Handle Login
 exports.handleLogin = async (req, res) => {
@@ -236,11 +272,15 @@ exports.handleLogin = async (req, res) => {
     switch (userType) {
       case "individual":
         user = await User.findById(userId);
-        topic = user?.isSubscribed ? "individual_subscribed" : "individual_trial";
+        topic = user?.isSubscribed
+          ? "individual_subscribed"
+          : "individual_trial";
         break;
       case "enterprise":
         user = await enterpriseUser.findById(userId);
-        topic = user?.isSubscribed ? "enterprise_subscribed" : "enterprise_trial";
+        topic = user?.isSubscribed
+          ? "enterprise_subscribed"
+          : "enterprise_trial";
         break;
       case "employee":
         user = await enterpriseEmploye.findById(userId);
@@ -340,5 +380,3 @@ exports.sendNotification = async (req, res) => {
     res.status(500).send("Failed to send notification.");
   }
 };
-
-
