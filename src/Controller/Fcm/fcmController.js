@@ -342,21 +342,22 @@ exports.sendNotification = async (req, res) => {
   const { title, body, imageUrl, topic } = req.body;
 
   if (!title || !body || !topic) {
-    return res.status(400).send("Title, body, and topic are required.");
+    return res.status(400).json({ error: "Title, body, and topic are required." });
   }
 
   try {
-    // Fetch users from the FCM collection based on topic
+    // Fetch users with the given topic
     const users = await fcmCollection.find({ topic });
 
-    console.log("Users fetched from database:", users);
+    console.log(`Users fetched for topic "${topic}":`, users);
 
     if (!users || users.length === 0) {
-      return res.status(404).send("No users found for the selected topic.");
+      console.warn(`No users found for the topic: ${topic}`);
+      return res.status(404).json({ error: `No users found for topic: ${topic}` });
     }
 
-    // Prepare the message for FCM
-    const message = {
+    // Prepare the notification payload
+    const payload = {
       notification: {
         title: title,
         body: body,
@@ -365,18 +366,36 @@ exports.sendNotification = async (req, res) => {
         imageUrl: imageUrl || "",
         notificationType: "home",
       },
-      topic: `/topics/${topic}`,
     };
 
-    console.log("Message payload:", message);
+    const fcmIds = users.map(user => user.fcmId);
 
-    // Send the notification
-    const response = await admin.messaging().send(message);
-    console.log("Notification response:", response);
+    // Send notification to each FCM ID
+    const sendNotifications = fcmIds.map(async fcmId => {
+      try {
+        const response = await admin.messaging().send({
+          ...payload,
+          token: fcmId, // Send to a specific FCM token
+        });
+        console.log(`Notification successfully sent to FCM ID ${fcmId}:`, response);
+        return { fcmId, status: "success", response };
+      } catch (error) {
+        console.error(`Failed to send notification to FCM ID ${fcmId}:`, error.message);
+        return { fcmId, status: "failure", error: error.message };
+      }
+    });
 
-    res.status(200).send(`Notification sent to topic: ${topic}`);
+    // Wait for all notifications to be sent
+    const results = await Promise.all(sendNotifications);
+
+    console.log("Notification sending results:", results);
+
+    res.status(200).json({
+      message: `Notifications sent to users subscribed to topic: ${topic}`,
+      results,
+    });
   } catch (error) {
-    console.error("Error sending notification:", error.message);
-    res.status(500).send("Failed to send notification.");
+    console.error("Error sending notifications:", error.message);
+    res.status(500).json({ error: "Failed to send notifications." });
   }
 };
