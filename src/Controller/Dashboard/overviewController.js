@@ -342,118 +342,197 @@ module.exports.getPlanMembers = async (req, res) => {
   }
 };
 
+// module.exports.getUserPercentage = async (req, res) => {
+//   try {
+//     // Get current date
+//     const now = new Date();
+
+//     // Get start and end of the current month
+//     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+//     const endOfCurrentMonth = new Date(
+//       now.getFullYear(),
+//       now.getMonth() + 1, 0, 23, 59, 59, 999
+//     );
+
+//     // console.log('startOfCurrentMonth', startOfCurrentMonth);
+//     // console.log('endOfCurrentMonth', endOfCurrentMonth);
+
+//     // Get end of the previous month
+//     const endOfPreviousMonth = new Date(
+//       now.getFullYear(),
+//       now.getMonth(), 0, 23, 59, 59, 999
+//     );
+
+//     // Step 1: Fetch users from this month
+//     const thisMonthUsers = [
+//       ...(await individualUser.find({
+//         createdAt: { $gte: startOfCurrentMonth, $lte: endOfCurrentMonth },
+//       })),
+//       ...(await enterpriseUser.find({
+//         createdAt: { $gte: startOfCurrentMonth, $lte: endOfCurrentMonth },
+//       })),
+//       ...(await enterpriseEmployeModel.find({
+//         createdAt: { $gte: startOfCurrentMonth, $lte: endOfCurrentMonth },
+//       })),
+//     ];
+
+//     // console.log('thisMonthUsers:', thisMonthUsers.length);
+
+//     // Fetch users from the previous months
+//     const individualUsers = await individualUser.find({
+//       createdAt: { $lt: endOfPreviousMonth },
+//     });
+
+//     const enterpriseUsers = await enterpriseUser.find({
+//       createdAt: { $lt: endOfPreviousMonth },
+//     });
+
+//     const enterpriseEmployees = await enterpriseEmployeModel.find({
+//       createdAt: { $lt: endOfPreviousMonth },
+//     });
+
+//     const previousMonthsUsers = [
+//       ...individualUsers,
+//       ...enterpriseUsers,
+//       ...enterpriseEmployees,
+//     ];
+
+//     // Calculate the start and end of the previous month
+//     const endOflastMonth = new Date(now.getFullYear(), now.getMonth(), 0); // Last day of the last month
+//     const startOflastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1); // First day of the last month
+
+//     // Fetch users from the last month (from the start to the end of the last month)
+//     const individualUsersLastMonth = await individualUser.find({
+//       createdAt: { $gte: startOflastMonth, $lt: endOflastMonth },
+//     });
+
+//     const enterpriseUsersLastMonth = await enterpriseUser.find({
+//       createdAt: { $gte: startOflastMonth, $lt: endOflastMonth },
+//     });
+
+//     const enterpriseEmployeesLastMonth = await enterpriseEmployeModel.find({
+//       createdAt: { $gte: startOflastMonth, $lt: endOflastMonth },
+//     });
+
+//     // Combine all users from the last month
+//     const lastMonthsUsers = [
+//       ...individualUsersLastMonth,
+//       ...enterpriseUsersLastMonth,
+//       ...enterpriseEmployeesLastMonth,
+//     ];
+
+//     // Total users
+//     const totalUsers = thisMonthUsers.length + previousMonthsUsers.length;
+
+//     // Step 3: Calculate percentages
+//     const thisMonthPercentage = (thisMonthUsers.length / totalUsers) * 100;
+//     const previousMonthsPercentage =
+//       (previousMonthsUsers.length / totalUsers) * 100;
+
+//     // Step 4: Calculate growth/loss percentage
+//     let growthLoss = 0;
+//     if (thisMonthUsers.length + previousMonthsUsers.length > 0) {
+//       growthLoss =
+//         (thisMonthUsers.length /
+//           (thisMonthUsers.length + lastMonthsUsers.length)) *
+//         100;
+//     }
+
+//     // Step 5: Return the result
+//     return res.status(200).json({ 
+//       userData: {
+//         totalUsers,
+//         thisMonthUsers: thisMonthUsers.length,
+//         previousMonthsUsers: previousMonthsUsers.length,
+//         thisMonthPercentage: thisMonthPercentage.toFixed(2),
+//         previousMonthsPercentage: previousMonthsPercentage.toFixed(2),
+//         growthLoss: growthLoss.toFixed(2), // Positive for growth, negative for loss
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Error while calculating user percentages:', error);
+//     return res.status(500).json({ message: 'Server error' });
+//   }
+// };
+
+
 module.exports.getUserPercentage = async (req, res) => {
   try {
-    // Get current date
+    const { startDate, endDate } = req.query;
+
+    // Parse the provided startDate and endDate
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Get the current date
     const now = new Date();
 
-    // Get start and end of the current month
+    // Get start and end of the current month (for later use)
     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfCurrentMonth = new Date(
       now.getFullYear(),
       now.getMonth() + 1, 0, 23, 59, 59, 999
     );
 
-    // console.log('startOfCurrentMonth', startOfCurrentMonth);
-    // console.log('endOfCurrentMonth', endOfCurrentMonth);
-
-    // Get end of the previous month
-    const endOfPreviousMonth = new Date(
-      now.getFullYear(),
-      now.getMonth(), 0, 23, 59, 59, 999
-    );
-
-    // Step 1: Fetch users from this month
+    // Fetch users within the provided date range (startDate to endDate)
     const thisMonthUsers = [
       ...(await individualUser.find({
-        createdAt: { $gte: startOfCurrentMonth, $lte: endOfCurrentMonth },
+        createdAt: { $gte: start, $lte: end },
       })),
       ...(await enterpriseUser.find({
-        createdAt: { $gte: startOfCurrentMonth, $lte: endOfCurrentMonth },
+        createdAt: { $gte: start, $lte: end },
       })),
       ...(await enterpriseEmployeModel.find({
-        createdAt: { $gte: startOfCurrentMonth, $lte: endOfCurrentMonth },
+        createdAt: { $gte: start, $lte: end },
       })),
     ];
 
-    // console.log('thisMonthUsers:', thisMonthUsers.length);
-
-    // Fetch users from the previous months
-    const individualUsers = await individualUser.find({
-      createdAt: { $lt: endOfPreviousMonth },
-    });
-
-    const enterpriseUsers = await enterpriseUser.find({
-      createdAt: { $lt: endOfPreviousMonth },
-    });
-
-    const enterpriseEmployees = await enterpriseEmployeModel.find({
-      createdAt: { $lt: endOfPreviousMonth },
-    });
-
-    const previousMonthsUsers = [
-      ...individualUsers,
-      ...enterpriseUsers,
-      ...enterpriseEmployees,
+    // Fetch all users created before the start date (previous users)
+    const previousMonthUsers = [
+      ...(await individualUser.find({
+        createdAt: { $lt: start }, // Users created before startDate
+      })),
+      ...(await enterpriseUser.find({
+        createdAt: { $lt: start }, // Users created before startDate
+      })),
+      ...(await enterpriseEmployeModel.find({
+        createdAt: { $lt: start }, // Users created before startDate
+      })),
     ];
 
-    // Calculate the start and end of the previous month
-    const endOflastMonth = new Date(now.getFullYear(), now.getMonth(), 0); // Last day of the last month
-    const startOflastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1); // First day of the last month
+    // Total users (sum of thisMonthUsers and previousMonthUsers)
+    const totalUsers = thisMonthUsers.length + previousMonthUsers.length;
 
-    // Fetch users from the last month (from the start to the end of the last month)
-    const individualUsersLastMonth = await individualUser.find({
-      createdAt: { $gte: startOflastMonth, $lt: endOflastMonth },
-    });
-
-    const enterpriseUsersLastMonth = await enterpriseUser.find({
-      createdAt: { $gte: startOflastMonth, $lt: endOflastMonth },
-    });
-
-    const enterpriseEmployeesLastMonth = await enterpriseEmployeModel.find({
-      createdAt: { $gte: startOflastMonth, $lt: endOflastMonth },
-    });
-
-    // Combine all users from the last month
-    const lastMonthsUsers = [
-      ...individualUsersLastMonth,
-      ...enterpriseUsersLastMonth,
-      ...enterpriseEmployeesLastMonth,
-    ];
-
-    // Total users
-    const totalUsers = thisMonthUsers.length + previousMonthsUsers.length;
-
-    // Step 3: Calculate percentages
+    // Calculate percentages
     const thisMonthPercentage = (thisMonthUsers.length / totalUsers) * 100;
-    const previousMonthsPercentage =
-      (previousMonthsUsers.length / totalUsers) * 100;
+    const previousMonthPercentage = (previousMonthUsers.length / totalUsers) * 100;
 
-    // Step 4: Calculate growth/loss percentage
+    // Calculate growth/loss percentage
     let growthLoss = 0;
-    if (thisMonthUsers.length + previousMonthsUsers.length > 0) {
+    if (thisMonthUsers.length + previousMonthUsers.length > 0) {
       growthLoss =
         (thisMonthUsers.length /
-          (thisMonthUsers.length + lastMonthsUsers.length)) *
+          (thisMonthUsers.length + previousMonthUsers.length)) *
         100;
     }
 
-    // Step 5: Return the result
-    return res.status(200).json({ 
+    // Return the result
+    return res.status(200).json({
       userData: {
         totalUsers,
         thisMonthUsers: thisMonthUsers.length,
-        previousMonthsUsers: previousMonthsUsers.length,
+        previousMonthUsers: previousMonthUsers.length,
         thisMonthPercentage: thisMonthPercentage.toFixed(2),
-        previousMonthsPercentage: previousMonthsPercentage.toFixed(2),
+        previousMonthPercentage: previousMonthPercentage.toFixed(2),
         growthLoss: growthLoss.toFixed(2), // Positive for growth, negative for loss
-      }
+      },
     });
   } catch (error) {
-    console.error('Error while calculating user percentages:', error);
+    console.error('Error while calculating user growth:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 module.exports.getRecentRegister = async (req, res) => {
   try {
