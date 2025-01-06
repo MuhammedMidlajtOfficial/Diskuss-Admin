@@ -5,6 +5,7 @@ const {
   getSubscriptionPlanByPlanId,
   createSubscriptionPlan,
   updateSubscriptionPlan,
+  updateSubscriptionPlanStatus,
   deleteSubscriptionPlan,
 } = require("../../Controller/PaymentManagement/SubscriptionPlanController");
 
@@ -24,6 +25,9 @@ router.post("/", createSubscriptionPlan);
 
 // Route to update a subscription plan by its custom plan ID
 router.put("/:plan_id", updateSubscriptionPlan);
+
+//Route to Update status of the Subscription
+router.patch('/:plan_id/status',updateSubscriptionPlanStatus );
 
 // Route to delete a subscription plan by its custom plan ID
 router.delete("/:plan_id", deleteSubscriptionPlan);
