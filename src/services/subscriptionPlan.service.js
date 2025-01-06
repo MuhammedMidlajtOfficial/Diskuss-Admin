@@ -134,6 +134,38 @@ throw error; // Re-throw the error for higher-level handling if needed
   };
 
   
+  /**
+ * Update the status of a subscription plan by plan ID.
+ * @param {String} planId
+ * @param {String} status
+ * @returns {Promise<Object>}
+ */
+const updateSubscriptionPlanStatusByPlanId = async (planId, status) => {
+  try {
+      const validStatuses = ['active', 'inactive'];
+      if (!validStatuses.includes(status)) {
+          throw new Error('Invalid status value');
+      }
+
+      const updatedPlan = await SubscriptionPlan.findOneAndUpdate(
+          { planId },
+          { status },
+          { new: true, runValidators: true }
+      ).exec();
+
+      if (!updatedPlan) {
+          throw new Error('Subscription Plan not found');
+      }
+
+      return updatedPlan;
+  } catch (error) {
+      console.error('Error updating subscription plan status by plan ID:', error);
+      throw error;
+  }
+};
+
+
+
 /**
  * Delete a SubscriptionPlan plan by plan_id.
  * @param {String} plan_id - The unique identifier of the SubscriptionPlan plan to delete.
@@ -166,5 +198,6 @@ module.exports = {
     findOneByPlanId,
     createSubscriptionPlan,
     updateSubscriptionPlanByPlanId,
+    updateSubscriptionPlanStatusByPlanId,
     deleteSubscriptionPlanByPlanId
 };

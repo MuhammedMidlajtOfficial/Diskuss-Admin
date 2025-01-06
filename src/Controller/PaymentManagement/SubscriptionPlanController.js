@@ -173,6 +173,29 @@ const updateSubscriptionPlan = async (req, res) => {
   };
 
 
+  const updateSubscriptionPlanStatus = async (req, res) => {
+    try {
+        const { plan_id } = req.params;
+        const { status } = req.body;
+
+        if (!status) {
+            return res.status(400).json({ message: "Status is required for update." });
+        }
+
+        const updatedSubscriptionPlan = await SubscriptionPlanService.updateSubscriptionPlanStatusByPlanId(plan_id, status);
+
+        res.status(200).json({
+            message: "Subscription Plan status updated successfully",
+            updatedSubscriptionPlan,
+        });
+    } catch (error) {
+        console.error("Error updating Subscription Plan status:", error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+
+
   /**
    * Delete a SubscriptionPlan
    * @param {Request} req
@@ -203,5 +226,6 @@ module.exports = {
     getSubscriptionPlanByPlanId,
     createSubscriptionPlan,
     updateSubscriptionPlan,
+    updateSubscriptionPlanStatus,
     deleteSubscriptionPlan
 };

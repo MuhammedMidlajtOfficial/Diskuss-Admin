@@ -8,6 +8,7 @@ const SubscriptionPlanSchema = new mongoose.Schema({
   features: { type: mongoose.Schema.Types.Mixed, default: {} }, // Flexible JSON format
   type: {type: String, enum: ['Individual', 'Enterprise'],required: true},
   duration : { type: Number, required: true },
+  status : {type:String, required:true, enum: ['active', 'inactive'], default:'active'},
 
 }, { timestamps: true });
 
