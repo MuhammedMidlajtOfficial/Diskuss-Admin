@@ -88,7 +88,38 @@ const findByIdWithUserDetails = async (subscriptionId) => {
   }
 };
 
+/**
+ * Update the status of a specific subscription by ID.
+ * @param {String} subscriptionId
+ * @param {String} newStatus
+ * @returns {Promise<Object>}
+ */
+const updateSubscriptionStatus = async (subscriptionId, newStatus) => {
+  try {
+      const validStatuses = ['active', 'inactive', 'canceled', 'pending', 'failed'];
+      if (!validStatuses.includes(newStatus)) {
+          throw new Error('Invalid status value');
+      }
+
+      const subscription = await UserSubscription.findByIdAndUpdate(
+          subscriptionId,
+          { status: newStatus },
+          { new: true, runValidators: true }
+      ).exec();
+
+      if (!subscription) {
+          throw new Error('Subscription not found');
+      }
+
+      return subscription;
+  } catch (error) {
+      console.error('Error updating subscription status:', error);
+      throw error;
+  }
+};
+
 module.exports = {
   findAllWithUserDetails,
   findByIdWithUserDetails,
+  updateSubscriptionStatus
 };
