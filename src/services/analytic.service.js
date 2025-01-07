@@ -1,4 +1,4 @@
-const Analytic = require("../models/analytic.model")
+const Analytic = require("../models/analytics/analytic.model")
 
 const Profile = require("../models/profile")
 const enterprise = require("../models/enterpriseUser")
