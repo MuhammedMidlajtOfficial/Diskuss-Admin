@@ -591,7 +591,7 @@ module.exports.getEnterpriseUser = async (req, res) => {
       .limit(pageSize)
       .lean() // Use lean for better performance
       .populate({
-        path: 'empId', // Populate the empId references
+        path: 'empIds.empId', // Populate the empId references
         select: '_id', // Only select the _id of employees
       })
       .select('companyName email image phnNumber');
