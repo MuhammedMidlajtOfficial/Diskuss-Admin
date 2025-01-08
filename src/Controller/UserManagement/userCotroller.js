@@ -599,7 +599,7 @@ module.exports.getEnterpriseUser = async (req, res) => {
     // Add employee counts to each user
     const usersWithEmployeeCounts = enterpriseUsers.map((user) => ({
       ...user,
-      employeeCount: user.empId ? user.empId.length : 0,
+      employeeCount: user.empIds ? user.empIds.length : 0,
     }));
 
     // Count total matching documents
