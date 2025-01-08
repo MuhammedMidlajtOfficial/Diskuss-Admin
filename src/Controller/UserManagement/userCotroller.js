@@ -624,7 +624,7 @@ module.exports.getEnterpriseUserById = async (req, res) => {
     const userId = req.params.id;
 
     // Check if the user exists in the EnterpriseUser collection
-    const enterpriseUserExist = await enterpriseUser.findById(userId).populate('empId')
+    const enterpriseUserExist = await enterpriseUser.findById(userId).populate('empIds.empId')
     if (enterpriseUserExist) {
       return res.status(200).json({ userData: enterpriseUserExist, userType: 'enterprise' });
     }
