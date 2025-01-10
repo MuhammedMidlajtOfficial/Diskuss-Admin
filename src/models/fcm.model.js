@@ -10,6 +10,8 @@ const fcmSchema = new mongoose.Schema({
     enum: ['subscription', 'message', 'meeting', 'home'] 
   },
   topic: { type: String, default: "unregistered" },
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model("fcmCollection", fcmSchema);
