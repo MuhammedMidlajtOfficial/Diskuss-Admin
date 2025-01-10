@@ -167,6 +167,7 @@ module.exports.addIndividualUser = async (req,res) =>{
 module.exports.addEnterpriseUser = async (req, res) => {
   try {
     const {
+      username,
       companyName,
       industryType,
       email,
@@ -183,7 +184,7 @@ module.exports.addEnterpriseUser = async (req, res) => {
     const passwordRaw = req.body.password;
 
     // Check for missing fields
-    if (!companyName || !industryType || !email || !passwordRaw) {
+    if (!companyName || !industryType || !email || !passwordRaw || !username) {
       return res.status(400).json({ message: "Company name, industry type, email, and password are required" });
     }
 
@@ -219,6 +220,7 @@ module.exports.addEnterpriseUser = async (req, res) => {
 
     // Create a new enterprise user
     const newEnterpriseUser = await enterpriseUser.create({
+      username,
       companyName,
       industryType,
       email,
@@ -438,7 +440,7 @@ module.exports.updateProfile = async (req, res) => {
     // Define allowed fields for each user type
     const allowedFields = {
       individual: ['username', 'email', 'image', 'role', 'name', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink'],
-      enterprise: ['email', 'image', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink', 'companyName', 'industryType', 'aboutUs'],
+      enterprise: ['username', 'email', 'image', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink', 'companyName', 'industryType', 'aboutUs'],
       enterpriseEmp: ['username', 'email', 'image', 'role', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink']
     };
 
