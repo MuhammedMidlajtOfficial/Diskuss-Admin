@@ -392,7 +392,7 @@ module.exports.forgotPasswordValidateOtp = async (req, res) => {
       type: "reset-password"
     }
 
-    const token = jwt.sign(payload,process.env.OTP_TOKEN_SECRET,{expiresIn:"10m"})
+    const token = jwt.sign(payload,process.env.ACCESS_TOKEN_SECRET,{expiresIn:"10m"})
 
     return res.status(200).json({ message: "OTP verified successfully",token });
   } catch (error) {
@@ -415,7 +415,7 @@ module.exports.forgotPasswordReset = async (req, res) => {
 
     let decodedToken;
     try {
-      decodedToken = jwt.verify(token, process.env.OTP_TOKEN_SECRET);
+      decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     } catch (error) {
       console.error("not verified ",error)
       return res.status(400).json({message:"The time to reset your password has expired. Please request a new OTP to continue"});
