@@ -167,6 +167,7 @@ module.exports.addIndividualUser = async (req,res) =>{
 module.exports.addEnterpriseUser = async (req, res) => {
   try {
     const {
+      username,
       companyName,
       industryType,
       email,
@@ -183,7 +184,7 @@ module.exports.addEnterpriseUser = async (req, res) => {
     const passwordRaw = req.body.password;
 
     // Check for missing fields
-    if (!companyName || !industryType || !email || !passwordRaw) {
+    if (!companyName || !industryType || !email || !passwordRaw || !username) {
       return res.status(400).json({ message: "Company name, industry type, email, and password are required" });
     }
 
@@ -219,6 +220,7 @@ module.exports.addEnterpriseUser = async (req, res) => {
 
     // Create a new enterprise user
     const newEnterpriseUser = await enterpriseUser.create({
+      username,
       companyName,
       industryType,
       email,
@@ -438,7 +440,7 @@ module.exports.updateProfile = async (req, res) => {
     // Define allowed fields for each user type
     const allowedFields = {
       individual: ['username', 'email', 'image', 'role', 'name', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink'],
-      enterprise: ['email', 'image', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink', 'companyName', 'industryType', 'aboutUs'],
+      enterprise: ['username', 'email', 'image', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink', 'companyName', 'industryType', 'aboutUs'],
       enterpriseEmp: ['username', 'email', 'image', 'role', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink']
     };
 
@@ -591,7 +593,7 @@ module.exports.getEnterpriseUser = async (req, res) => {
       .limit(pageSize)
       .lean() // Use lean for better performance
       .populate({
-        path: 'empId', // Populate the empId references
+        path: 'empIds.empId', // Populate the empId references
         select: '_id', // Only select the _id of employees
       })
       .select('companyName email image phnNumber');
@@ -599,7 +601,7 @@ module.exports.getEnterpriseUser = async (req, res) => {
     // Add employee counts to each user
     const usersWithEmployeeCounts = enterpriseUsers.map((user) => ({
       ...user,
-      employeeCount: user.empId ? user.empId.length : 0,
+      employeeCount: user.empIds ? user.empIds.length : 0,
     }));
 
     // Count total matching documents
@@ -624,7 +626,7 @@ module.exports.getEnterpriseUserById = async (req, res) => {
     const userId = req.params.id;
 
     // Check if the user exists in the EnterpriseUser collection
-    const enterpriseUserExist = await enterpriseUser.findById(userId).populate('empId')
+    const enterpriseUserExist = await enterpriseUser.findById(userId).populate('empIds.empId')
     if (enterpriseUserExist) {
       return res.status(200).json({ userData: enterpriseUserExist, userType: 'enterprise' });
     }

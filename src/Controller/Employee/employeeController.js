@@ -2,7 +2,8 @@ const EmployeeCategory = require('../../models/employee.category.model');
 const EmployeeRole = require('../../models/employee.role.model');
 const Employee = require('../../models/employee.model')
 const { uploadImageToS3, deleteImageFromS3 } = require("../../services/AWS/s3Bucket");
-const nodemailer = require ('nodemailer')
+const nodemailer = require ('nodemailer');
+const bcrypt = require('bcrypt');
 require("dotenv").config();
 
 
@@ -46,11 +47,14 @@ const EmployeeController = {
             .json({ message: "Failed to upload image", error: uploadError });
         }
       }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       const employee = new Employee({
         username,
         image: imageUrl,
         email,
-        password,
+        password:hashedPassword,
         phnNumber,
         category,
       });
@@ -65,22 +69,22 @@ const EmployeeController = {
     const transporter = nodemailer.createTransport({
       service: "Gmail",
       auth: {
-        user: process.env.EMAIL,
-        pass: process.env.EMAIL_PASSWORD,
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
       },
     });
 
     const mailOptions = {
-      from: process.env.EMAIL, 
+      from: process.env.MAIL_USER, 
       to: email,
       subject: "Welcome to the Company!",
       html: `
-        <h1>Welcome, ${userName}!</h1>
+        <h1>Welcome, ${username}!</h1>
         <p>We're excited to have you on board. Here are your details:</p>
         <ul>
           <li><strong>Email:</strong> ${email}</li>
           <li><strong>Password:</strong> ${password}</li>
-          <li><strong>Phone Number:</strong> ${phoneNumber}</li>
+          <li><strong>Phone Number:</strong> ${phnNumber}</li>
           <li><strong>Category:</strong> ${category}</li>
           <li><strong>Profile Image:</strong> <a href="${imageUrl}">View Image</a></li>
         </ul>
@@ -108,13 +112,25 @@ const EmployeeController = {
   // Getting all employees
   getEmployees: async (req, res) => {
     try {
-      const { page = 1, limit = 10 } = req.query;
-      const totalEmployees = await Employee.countDocuments();
-      const employees = await Employee.find()
+      const { page = 1, limit = 10, search = "" } = req.query;
+      
+      // Build the search query (this example searches for username or email)
+      const searchQuery = search
+        ? { $or: [
+            { username: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } },
+          ] }
+        : {};
+  
+      // Count total employees matching the search query
+      const totalEmployees = await Employee.countDocuments(searchQuery);
+      
+      // Get the employees based on the search query, with pagination
+      const employees = await Employee.find(searchQuery)
         .sort({ createdAt: -1 })
         .limit(limit * 1)
         .skip((page - 1) * limit);
-
+  
       res.status(200).json({
         success: true,
         page: Number(page),
@@ -124,11 +140,12 @@ const EmployeeController = {
       });
     } catch (error) {
       console.error("Error fetching employees:", error.message);
-      res
-        .status(500)
-        .json({ message: "Error fetching employees", error: error.message });
+      res.status(500).json({
+        message: "Error fetching employees",
+        error: error.message,
+      });
     }
-  },
+  },  
 
   // Getting an employee by ID
   getEmployeeById: async (req, res) => {
