@@ -1,4 +1,4 @@
-// const { required, boolean } = require('joi');
+const { required, boolean } = require('joi');
 const mongoose = require('mongoose');
 
 const contactSchema = new mongoose.Schema({
