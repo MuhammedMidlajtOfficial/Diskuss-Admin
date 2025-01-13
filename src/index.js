@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const router = require("./Routes/index");
 const connectDB = require("./DBConfig");
+const cron = require("node-cron");
+const { sendNotificationsForOldRecords, notifyIncompleteContacts } = require("./Controller/Fcm/autoNotification");
 
 const app = express();
 app.use(cors());
@@ -15,6 +17,12 @@ app.use((err, req, res, next) => {
   res.status(statusCode).send({
       message: err.message || 'Internal Server Error',
   });
+});
+
+cron.schedule("0 */6 * * *", () => {
+  console.log("Running cron job every 6 hours...");
+  sendNotificationsForOldRecords();
+  notifyIncompleteContacts();
 });
 
 const PORT = process.env.PORT || 3000
