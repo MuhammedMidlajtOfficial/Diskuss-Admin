@@ -103,7 +103,7 @@ async function notifyIncompleteContacts() {
         },
         token: fcmRecord.fcmId,
         data: {
-          notificationType: "contact",
+          notificationType: `${fcmRecord.userType}-contact`,
         },
       };
 

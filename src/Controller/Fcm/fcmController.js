@@ -119,7 +119,7 @@ console.log(fcmDataList);
       notification,
       token: fcmData.fcmId,
       data: {
-        notificationType: "meeting",
+        notificationType: `${fcmData.userType}-meeting`,
       }
     }));
 
@@ -169,7 +169,7 @@ exports.sendMessageNotification = async (req, res) => {
       },
       data: {
         chatId,
-        notificationType: "message",
+        notificationType: `${fcmData.userType}-message`,
       },
       token: fcmData.fcmId,
     }));
@@ -218,11 +218,10 @@ exports.sendMeetingNotification = async (req, res) => {
                 body: notification.body,
               },
               data: {
-                notificationType: "meeting",
+              notificationType: `${fcmData.userType}-meeting`
               },
               token: fcmData.fcmId,
             };
-
             try {
               const response = await admin.messaging().send(message);
               console.log(`Notification sent to token: ${fcmData.fcmId}`, response);
