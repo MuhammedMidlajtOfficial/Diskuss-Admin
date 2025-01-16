@@ -37,7 +37,7 @@ async function sendNotificationsForOldRecords() {
         },
         token: record.fcmId,
         data: {
-          notificationType: record.notificationType || "home",
+          notificationType:"home",
         },
       };
 
@@ -103,7 +103,7 @@ async function notifyIncompleteContacts() {
         },
         token: fcmRecord.fcmId,
         data: {
-          notificationType: "contact_update",
+          notificationType: "contact",
         },
       };
 
