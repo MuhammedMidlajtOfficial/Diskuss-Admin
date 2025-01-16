@@ -10,7 +10,7 @@ const admin = require("../../firebaseConfig");
 
 // Handle Subscription Notification
 exports.handleSubscription = async (req, res) => {
-  const { fcmId, subscription } = req.body;
+  const { fcmId, subscription ,userType } = req.body;
 
   if (!fcmId) {
     return res.status(400).send("FCM ID is required.");
@@ -25,10 +25,11 @@ exports.handleSubscription = async (req, res) => {
           body: "Your plan has been successfully activated! Enjoy the premium features.",
         },
         data: {
-          notificationType: "subscription",
+          notificationType: `${userType}-subscription`,
         },
         token: fcmId, // Send to specific FCM ID
       };
+console.log("mes:",message);
 
       // Send the notification
       const response = await admin.messaging().send(message);
