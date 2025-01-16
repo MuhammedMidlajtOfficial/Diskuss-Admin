@@ -491,7 +491,7 @@ module.exports.updateProfile = async (req, res) => {
     }
 
     // Handle image upload if provided
-    if (requestData.image) {
+    if (requestData.image && requestData.image.length) {
       if (userExist.image) {
         await deleteImageFromS3(userExist.image); // Delete the old image from S3
       }
