@@ -118,6 +118,9 @@ console.log(fcmDataList);
     const message = fcmDataList.map((fcmData) => ({
       notification,
       token: fcmData.fcmId,
+      data: {
+        notificationType: "meeting",
+      }
     }));
 
     const sendPromises = message.map((message) =>
