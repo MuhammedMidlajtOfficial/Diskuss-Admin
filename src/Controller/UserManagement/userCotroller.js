@@ -439,15 +439,27 @@ module.exports.updateProfile = async (req, res) => {
 
     // Define allowed fields for each user type
     const allowedFields = {
-      individual: ['username', 'email', 'image', 'role', 'name', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink'],
-      enterprise: ['username', 'email', 'image', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink', 'companyName', 'industryType', 'aboutUs'],
-      enterpriseEmp: ['username', 'email', 'image', 'role', 'website', 'phnNumber', 'address', 'whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink']
+      individual: ['username', 'email', 'image', 'role', 'name', 'website', 'phnNumber', 'address', 'socialMedia'],
+      enterprise: ['username', 'email', 'image', 'website', 'phnNumber', 'address', 'socialMedia', 'companyName', 'industryType', 'aboutUs'],
+      enterpriseEmp: ['username', 'email', 'image', 'role', 'website', 'phnNumber', 'address', 'socialMedia']
     };
 
     // Filter `requestData` to only include allowed fields for the specific `userType`
     const updateData = Object.fromEntries(
       Object.entries(requestData).filter(([key]) => allowedFields[userType]?.includes(key))
     );
+
+    // Handle social media updates
+    const socialMediaFields = ['whatsappNo', 'facebookLink', 'instagramLink', 'twitterLink'];
+    const socialMediaUpdate = Object.fromEntries(
+      socialMediaFields
+        .filter(field => requestData[field])
+        .map(field => [field, requestData[field]])
+    );
+
+    if (Object.keys(socialMediaUpdate).length > 0) {
+      updateData.socialMedia = socialMediaUpdate;
+    }
 
     if (!updateData || Object.keys(updateData).length === 0) {
       return res.status(400).json({ message: "No valid fields to update" });
@@ -480,33 +492,22 @@ module.exports.updateProfile = async (req, res) => {
 
     // Handle image upload if provided
     if (requestData.image) {
-      // If the user already has an image, delete it from S3
       if (userExist.image) {
         await deleteImageFromS3(userExist.image); // Delete the old image from S3
       }
 
-      // Convert the image to a buffer (Base64 to binary)
       const imageBuffer = Buffer.from(requestData.image.replace(/^data:image\/\w+;base64,/, ""), 'base64');
-      const fileName = `${userId}-profile.jpg`; // Create a unique file name based on user ID
+      const fileName = `${userId}-profile.jpg`;
 
-      // Upload the new image to S3
       try {
         const uploadResult = await uploadImageToS3(imageBuffer, fileName);
-        console.log('Upload Result:', uploadResult);  // Check the result from S3
         if (uploadResult && uploadResult.Location) {
-          updateData.image = uploadResult.Location; // URL of the uploaded image
-        } else {
-          console.error('Image upload failed, no location returned');
+          updateData.image = uploadResult.Location;
         }
       } catch (error) {
         console.error('Error uploading image:', error);
       }
-    } else {
-      console.log('No image data provided');
     }
-
-    console.log('updateData.image:', updateData.image); // Log to check if image URL is assigned
-
 
     // Update the user data with the filtered and updated fields
     const updateResult = await model.updateOne({ _id: userId }, { $set: updateData });
@@ -520,6 +521,7 @@ module.exports.updateProfile = async (req, res) => {
     return res.status(500).json({ message: 'An error occurred while updating the user' });
   }
 };
+
 
 module.exports.getEnterpriseUserCount = async (req, res) => {
   try {
