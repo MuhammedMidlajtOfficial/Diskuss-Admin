@@ -10,7 +10,7 @@ const admin = require("../../firebaseConfig");
 
 // Handle Subscription Notification
 exports.handleSubscription = async (req, res) => {
-  const { fcmId, subscription } = req.body;
+  const { fcmId, subscription ,userType } = req.body;
 
   if (!fcmId) {
     return res.status(400).send("FCM ID is required.");
@@ -25,10 +25,11 @@ exports.handleSubscription = async (req, res) => {
           body: "Your plan has been successfully activated! Enjoy the premium features.",
         },
         data: {
-          notificationType: "subscription",
+          notificationType: `${userType}-subscription`,
         },
         token: fcmId, // Send to specific FCM ID
       };
+console.log("mes:",message);
 
       // Send the notification
       const response = await admin.messaging().send(message);
@@ -118,6 +119,9 @@ console.log(fcmDataList);
     const message = fcmDataList.map((fcmData) => ({
       notification,
       token: fcmData.fcmId,
+      data: {
+        notificationType: `${fcmData.userType}-meeting`,
+      }
     }));
 
     const sendPromises = message.map((message) =>
@@ -166,7 +170,7 @@ exports.sendMessageNotification = async (req, res) => {
       },
       data: {
         chatId,
-        notificationType: "message",
+        notificationType: `${fcmData.userType}-message`,
       },
       token: fcmData.fcmId,
     }));
@@ -215,11 +219,10 @@ exports.sendMeetingNotification = async (req, res) => {
                 body: notification.body,
               },
               data: {
-                notificationType: "meeting",
+              notificationType: `${fcmData.userType}-meeting`
               },
               token: fcmData.fcmId,
             };
-
             try {
               const response = await admin.messaging().send(message);
               console.log(`Notification sent to token: ${fcmData.fcmId}`, response);
