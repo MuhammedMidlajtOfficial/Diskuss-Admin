@@ -431,7 +431,6 @@ module.exports.updateProfile = async (req, res) => {
   try {
     const { userType, ...requestData } = req.body;
     const { id: userId } = req.params;
-
     // Validate required fields
     if (!userType || !userId) {
       return res.status(400).json({ message: "userType and userId are required" });
@@ -497,7 +496,7 @@ module.exports.updateProfile = async (req, res) => {
       }
 
       const imageBuffer = Buffer.from(requestData.image.replace(/^data:image\/\w+;base64,/, ""), 'base64');
-      const fileName = `${userId}-profile.jpg`;
+      const fileName = `${userId}-${Date.now()}-profile.jpg`;
 
       try {
         const uploadResult = await uploadImageToS3(imageBuffer, fileName);
