@@ -584,6 +584,7 @@ module.exports.getEnterpriseUser = async (req, res) => {
     const enterpriseUsers = await enterpriseUser
       .find({
         $or: [
+          { companyName: { $regex: searchRegex } },
           { username: { $regex: searchRegex } },
           { email: { $regex: searchRegex } },
           { name: { $regex: searchRegex } },
