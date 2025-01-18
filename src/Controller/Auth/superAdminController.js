@@ -40,7 +40,9 @@ module.exports.postSuperAdminSignup = async (req, res) => {
       'send-notification',
       'create-employee',
       'ticket-categories',
-      'assign-tickets'
+      'assign-tickets',
+      'logs',
+      'config'
     ]
 
     // Create a new Super Admin
@@ -64,7 +66,7 @@ module.exports.postSuperAdminSignup = async (req, res) => {
 
 module.exports.postLogin = async (req, res) => {
   try {
-    const { email, password,rememberMe } = req.body;
+    const { email, password, rememberMe } = req.body;
 
     // Validate request body
     if (!email || !password) {
@@ -80,7 +82,7 @@ module.exports.postLogin = async (req, res) => {
       userType = 'superAdmin';
     } else {
       // If not a superAdmin, check in the Employee collection
-      user = await employeeModel.findOne({ email });
+      user = await employeeModel.findOne({ email },{ status:'activ' });
       if (user) {
         userType = 'employee';
       }
