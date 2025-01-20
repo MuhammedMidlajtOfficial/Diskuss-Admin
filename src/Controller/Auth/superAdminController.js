@@ -184,7 +184,7 @@ module.exports.getUserByCategory = async (req, res) => {
 
     // If user is still not found, return an error response
     if (!userExist || userExist.length === 0) {
-      return res.status(404).json({ message: "No user found with the provided category" });
+      return res.status(200).json({ user: userExist, message: "No user found with the provided category" });
     }
 
     // Return the found user
