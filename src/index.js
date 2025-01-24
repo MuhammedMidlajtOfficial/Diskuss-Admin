@@ -25,6 +25,12 @@ cron.schedule("0 */6 * * *", () => {
   notifyIncompleteContacts();
 });
 
+// cron.schedule("* * * * *", () => {
+//   console.log("Running cron job every minute...");
+//   sendNotificationsForOldRecords();
+//   notifyIncompleteContacts();
+// });
+
 const PORT = process.env.PORT || 3000
 connectDB.then(() => {
   app.listen(PORT, () => {
