@@ -19,7 +19,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-cron.schedule("0 */6 * * *", () => {
+cron.schedule("0 */12 * * *", () => {
   console.log("Running cron job every 6 hours...");
   sendNotificationsForOldRecords();
   notifyIncompleteContacts();
