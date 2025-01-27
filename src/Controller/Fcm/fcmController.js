@@ -364,9 +364,9 @@ exports.sendNotification = async (req, res) => {
       notification: {
         title: title,
         body: body,
+        imageUrl: imageUrl,
       },
       data: {
-        imageUrl: imageUrl || "",
         notificationType: "home",
       },
     };
