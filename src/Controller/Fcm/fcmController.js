@@ -356,9 +356,8 @@ exports.sendNotification = async (req, res) => {
 
     if (!users || users.length === 0) {
       console.warn(`No users found for the topic: ${topic}`);
-      return res.status(404).json({ error: `No users found for topic: ${topic}` });
+      return res.status(404).json({ noUser:true, error: `No users found for topic: ${topic}` });
     }
-
     // Prepare the notification payload
     const payload = {
       notification: {
