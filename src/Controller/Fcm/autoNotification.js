@@ -11,13 +11,18 @@ async function sendNotificationsForOldRecords() {
       return;
     }
 
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // const sevenDaysAgo = new Date();
+    // sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     // const sevenDaysAgo = Date.now();
 
+    const seventyTwoHoursAgo = new Date();
+    seventyTwoHoursAgo.setHours(seventyTwoHoursAgo.getHours() - 72);
+
+    console.log(seventyTwoHoursAgo);
+
     const oldRecords = await fcmCollection.find({
-      updatedAt: { $lt: sevenDaysAgo },
+      updatedAt: { $lt: seventyTwoHoursAgo },
     });
 
     if (oldRecords.length === 0) {
@@ -37,7 +42,7 @@ async function sendNotificationsForOldRecords() {
         },
         token: record.fcmId,
         data: {
-          notificationType:"home",
+          notificationType: "home",
         },
       };
 
@@ -111,10 +116,7 @@ async function notifyIncompleteContacts() {
         const response = await admin.messaging().send(message);
         console.log(`Notification sent to ${record.fcmId}:`, response);
       } catch (error) {
-        console.error(
-          `Error sending notification to ${record.fcmId}:`,
-          error
-        );
+        console.error(`Error sending notification to ${record.fcmId}:`, error);
       }
     }
   } catch (error) {

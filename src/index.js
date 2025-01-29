@@ -19,11 +19,17 @@ app.use((err, req, res, next) => {
   });
 });
 
-cron.schedule("0 */6 * * *", () => {
+cron.schedule("0 */12 * * *", () => {
   console.log("Running cron job every 6 hours...");
   sendNotificationsForOldRecords();
   notifyIncompleteContacts();
 });
+
+// cron.schedule("* * * * *", () => {
+//   console.log("Running cron job every minute...");
+//   sendNotificationsForOldRecords();
+//   notifyIncompleteContacts();
+// });
 
 const PORT = process.env.PORT || 3000
 connectDB.then(() => {
