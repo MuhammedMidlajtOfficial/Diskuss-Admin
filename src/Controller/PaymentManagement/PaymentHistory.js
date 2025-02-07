@@ -1,4 +1,4 @@
-const { findAllWithUserDetails, findByIdWithUserDetails ,updateSubscriptionStatus} = require('../../services/userSubscription.service');
+const { findAllWithUserDetails, findByIdWithUserDetails ,updateSubscriptionStatus, getSubscriptionAmounts} = require('../../services/userSubscription.service');
 
 /**
  * Get all user subscriptions with user details.
@@ -43,6 +43,15 @@ const getUserSubscriptionByIdWithDetails = async (req, res) => {
     }
   };
   
+  const getSubscriptionAmount = async (req, res) => {
+    try {
+      const subscription = await getSubscriptionAmounts()
+      return res.status(200).json(subscription);
+    } catch (error) {
+      console.error('Error fetching subscription by ID with details:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  };
 
   const updateUserSubscriptionStatus = async (req, res) => {
       try {
@@ -62,6 +71,7 @@ const getUserSubscriptionByIdWithDetails = async (req, res) => {
   module.exports = {
     getAllUserSubscriptionsWithDetails,
     getUserSubscriptionByIdWithDetails,
-    updateUserSubscriptionStatus
+    updateUserSubscriptionStatus,
+    getSubscriptionAmount
   };
   

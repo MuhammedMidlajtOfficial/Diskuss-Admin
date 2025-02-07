@@ -131,6 +131,46 @@ const findByIdWithUserDetails = async (subscriptionId) => {
   }
 };
 
+const getSubscriptionAmounts = async () => {
+  try {
+    // Fetch all subscriptions where `payment.netAmount` exists
+    const subscriptions = await UserSubscription.find({ "payment.netAmount": { $exists: true } }).exec();
+
+    // if (!subscriptions || subscriptions.length === 0) {
+    //   throw new Error('No subscriptions found');
+    // }
+
+    // Initialize revenue variables
+    let totalRevenue = 0;
+    let pendingPayments = 0;
+    let completedTransactions = 0;
+
+    // Iterate over subscriptions to calculate values
+    subscriptions.forEach(subscription => {
+      if (subscription.payment && subscription.payment.length > 0) {
+        const netAmount = subscription.payment[0]?.netAmount || 0; // Safely access netAmount
+
+        totalRevenue += netAmount;
+
+        if (subscription.status === 'pending') {
+          pendingPayments += netAmount;
+        } else if (subscription.status === 'active') {
+          completedTransactions += netAmount;
+        }
+      }
+    });
+
+    return {
+      totalRevenue,
+      pendingPayments,
+      completedTransactions
+    };
+  } catch (error) {
+    console.error('Error fetching subscription amounts:', error);
+    throw error;
+  }
+};
+
 /**
  * Update the status of a specific subscription by ID.
  * @param {String} subscriptionId
@@ -164,5 +204,6 @@ const updateSubscriptionStatus = async (subscriptionId, newStatus) => {
 module.exports = {
   findAllWithUserDetails,
   findByIdWithUserDetails,
-  updateSubscriptionStatus
+  updateSubscriptionStatus,
+  getSubscriptionAmounts
 };
