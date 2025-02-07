@@ -6,24 +6,62 @@ const User = require('../models/individualUser');
  * Find all user subscriptions with user details.
  * @returns {Promise<Object[]>}
  */
-const findAllWithUserDetails = async () => {
+const findAllWithUserDetails = async (page = 1, limit = 10, status, sortBy = 'createdAt', sortOrder = 'asc', search = '') => {
   try {
-    const subscriptions = await UserSubscription.find()
+    const skip = (page - 1) * limit;
+
+    // Build the filter query
+    let filter = {};
+    if (status) filter.status = status;
+
+    // If search is provided, modify the query to match users first
+    let userFilter = {};
+    if (search) {
+      const searchRegex = new RegExp(search, 'i'); // Case-insensitive search
+      userFilter = {
+        $or: [
+          { companyName: searchRegex },  // EnterpriseUser field
+          { username: searchRegex },     // Individual User field
+          { email: searchRegex },
+        ]
+      };
+    }
+
+    // Find matching users from both EnterpriseUser & User collections
+    const matchedEnterpriseUsers = await EnterpriseUser.find(userFilter).select('_id').exec();
+    const matchedIndividualUsers = await User.find(userFilter).select('_id').exec();
+
+    // Extract matching user IDs
+    const matchedUserIds = [...matchedEnterpriseUsers, ...matchedIndividualUsers].map(user => user._id);
+
+    // Apply user filter if search is present
+    if (search) filter.userId = { $in: matchedUserIds };
+
+    // Sorting order
+    const sortOptions = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+    // Fetch total count after filtering
+    const totalSubscriptions = await UserSubscription.countDocuments(filter);
+
+    // Fetch paginated subscriptions
+    const subscriptions = await UserSubscription.find(filter)
       .populate('planId') // Populate plan details if needed
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit)
       .exec();
 
-    // Add user details for each subscription
+    // Fetch user details for each subscription
     const subscriptionsWithDetails = await Promise.all(
       subscriptions.map(async (subscription) => {
         const userId = subscription.userId;
 
-        // Fetch user details from the appropriate collection
+        // Fetch user details from EnterpriseUser or User collection
         const enterpriseUser = await EnterpriseUser.findById(userId).exec();
         const individualUser = await User.findById(userId).exec();
 
         const userDetails = enterpriseUser || individualUser;
 
-        // Standardize the response format
         return {
           subscription,
           user: userDetails
@@ -39,7 +77,12 @@ const findAllWithUserDetails = async () => {
       })
     );
 
-    return subscriptionsWithDetails;
+    return {
+      totalSubscriptions,
+      totalPages: Math.ceil(totalSubscriptions / limit),
+      currentPage: page,
+      subscriptions: subscriptionsWithDetails,
+    };
   } catch (error) {
     console.error('Error fetching all subscriptions with user details:', error);
     throw error;

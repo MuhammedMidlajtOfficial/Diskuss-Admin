@@ -8,14 +8,23 @@ const { findAllWithUserDetails, findByIdWithUserDetails ,updateSubscriptionStatu
  */
 const getAllUserSubscriptionsWithDetails = async (req, res) => {
   try {
-    const subscriptions = await findAllWithUserDetails();
-    return res.status(200).json(subscriptions);
+    const {
+      page = 1,
+      limit = 10,
+      status = "",
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      search = ''
+    } = req.query;
+
+    const subscriptionsData = await findAllWithUserDetails(page, limit, status, sortBy, sortOrder, search);
+
+    return res.status(200).json(subscriptionsData);
   } catch (error) {
     console.error('Error fetching all subscriptions with details:', error);
     return res.status(500).json({ error: error.message });
   }
 };
-
 
 /**
  * Get a specific user subscription by ID with user details.
