@@ -82,7 +82,7 @@ module.exports.postLogin = async (req, res) => {
       userType = 'superAdmin';
     } else {
       // If not a superAdmin, check in the Employee collection
-      user = await employeeModel.findOne({ email },{ status:'activ' });
+      user = await employeeModel.findOne({ email });
       if (user) {
         userType = 'employee';
       }
@@ -94,7 +94,7 @@ module.exports.postLogin = async (req, res) => {
     }
 
     // Check if the password matches
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const passwordMatch = await bcrypt.compare(password, user?.password);
 
     if (!passwordMatch) {
       return res.status(401).json({ message: 'Incorrect password. Please try again' });
