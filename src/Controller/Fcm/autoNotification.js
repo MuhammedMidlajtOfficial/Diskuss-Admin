@@ -2,6 +2,7 @@ const fcmCollection = require("../../models/fcm.model");
 const admin = require("../../firebaseConfig");
 const Contact = require("../../models/contact.individul.model");
 const configModel = require("../../models/config/config.model");
+const meetingCollection = require("../../models/EnterpriseMeetingModel");
 
 async function sendNotificationsForOldRecords() {
   try {
@@ -124,7 +125,128 @@ async function notifyIncompleteContacts() {
   }
 }
 
+async function sendMeetingNotifications() {
+  try {
+    const currentTime = new Date();
+
+    // Get current date and time for comparison
+    const currentDateString = currentTime.toISOString().split("T")[0]; // YYYY-MM-DD
+    const now = new Date();
+
+    // Fetch meetings scheduled for today
+    const meetings = await meetingCollection.find({
+      selectedDate: new Date(currentDateString), // Ensure selectedDate is a Date object
+    });
+    console.log("Meetings for today:", meetings);
+
+    if (meetings.length === 0) {
+      console.log("No meetings scheduled for today.");
+      return;
+    }
+
+    for (const meeting of meetings) {
+      // Validate time format
+      if (
+        !meeting.startTime.includes("AM") &&
+        !meeting.startTime.includes("PM")
+      ) {
+        console.error(
+          `Invalid time format for meeting "${meeting.meetingTitle}": ${meeting.startTime}`
+        );
+        continue; // Skip invalid meetings
+      }
+
+      // Parse meeting start time
+      const [hours, minutes] = meeting.startTime
+        .replace("AM", "")
+        .replace("PM", "")
+        .split(":")
+        .map((str) => parseInt(str.trim(), 10));
+      const isPM = meeting.startTime.includes("PM");
+      const meetingHours = isPM && hours !== 12 ? hours + 12 : hours;
+      const meetingMinutes = minutes;
+      console.log("hours:", hours);
+      console.log("min:", minutes);
+
+      // Calculate notification time (30 minutes before)
+      const notificationTime = new Date();
+      notificationTime.setHours(meetingHours);
+      notificationTime.setMinutes(meetingMinutes - 30);
+
+      // Handle negative minutes
+      if (notificationTime.getMinutes() < 0) {
+        notificationTime.setHours(meetingHours - 1);
+        notificationTime.setMinutes(60 + (meetingMinutes - 30));
+      }
+
+      // Compare current time with notification time (within ±1 minute)
+      const diffInMinutes = Math.abs(
+        Math.floor((notificationTime - now) / (1000 * 60))
+      );
+      if (diffInMinutes <= 1) {
+        console.log(
+          `Sending notifications for meeting "${meeting.meetingTitle}" starting in 30 minutes.`
+        );
+
+        // Notify meeting owner
+        const ownerFcm = await fcmCollection.findOne({
+          userId: meeting.meetingOwner,
+        });
+        console.log("Owner:", ownerFcm);
+
+        if (ownerFcm && ownerFcm.fcmId) {
+          await sendNotification(
+            ownerFcm.fcmId,
+            `Your meeting "${meeting.meetingTitle}" is starting in 30 minutes.`,
+            ownerFcm.userType // Include the user type
+          );
+        }
+
+        // Notify all invited people
+        for (const invitee of meeting.invitedPeople) {
+          const inviteeFcm = await fcmCollection.findOne({
+            userId: invitee.user,
+          });
+          console.log("invited peopele:", inviteeFcm);
+
+          if (inviteeFcm && inviteeFcm.fcmId) {
+            await sendNotification(
+              inviteeFcm.fcmId,
+              `You are invited to the meeting "${meeting.meetingTitle}", which is starting in 30 minutes.`,
+              inviteeFcm.userType // Include the user type
+            );
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching meetings or sending notifications:", error);
+  }
+}
+
+// Helper function to send FCM notifications
+async function sendNotification(fcmId, messageBody, userType) {
+  const message = {
+    notification: {
+      title: "Meeting Reminder",
+      body: messageBody,
+    },
+    token: fcmId,
+    data: {
+      notificationType: `${userType}-meeting`, // Include user type in the notification type
+    },
+  };
+
+  try {
+    const response = await admin.messaging().send(message);
+    console.log(`Notification sent to FCM ID ${fcmId}:`, response);
+  } catch (error) {
+    console.error(`Error sending notification to FCM ID ${fcmId}:`, error);
+  }
+}
+
 module.exports = {
   sendNotificationsForOldRecords,
   notifyIncompleteContacts,
+  sendMeetingNotifications,
 };

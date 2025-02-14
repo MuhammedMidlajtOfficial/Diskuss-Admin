@@ -3,7 +3,7 @@ const cors = require("cors");
 const router = require("./Routes/index");
 const connectDB = require("./DBConfig");
 const cron = require("node-cron");
-const { sendNotificationsForOldRecords, notifyIncompleteContacts } = require("./Controller/Fcm/autoNotification");
+const { sendNotificationsForOldRecords, notifyIncompleteContacts, sendMeetingNotifications } = require("./Controller/Fcm/autoNotification");
 
 const app = express();
 app.use(cors());
@@ -25,11 +25,17 @@ cron.schedule("0 */12 * * *", () => {
   notifyIncompleteContacts();
 });
 
-// cron.schedule("* * * * *", () => {
-//   console.log("Running cron job every minute...");
-//   sendNotificationsForOldRecords();
-//   notifyIncompleteContacts();
-// });
+cron.schedule("* * * * *", () => {
+  console.log("Running cron job every minute...");
+  sendNotificationsForOldRecords();
+  notifyIncompleteContacts();
+});
+
+// Schedule cron job to run every minute
+cron.schedule("* * * * *", () => {
+  console.log("Checking for meetings starting now...");
+  sendMeetingNotifications();
+});
 
 const PORT = process.env.PORT || 3000
 connectDB.then(() => {
