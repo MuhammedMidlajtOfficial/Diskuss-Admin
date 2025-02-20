@@ -98,6 +98,7 @@ module.exports.addIndividualUser = async (req,res) =>{
       username,
       email,
       image,
+      companyName,
       role,
       name,
       website,
@@ -144,6 +145,7 @@ module.exports.addIndividualUser = async (req,res) =>{
       password: hashedPassword,
       image: imageUrl,
       role,
+      companyName,
       name,
       website,
       phnNumber,
@@ -438,7 +440,7 @@ module.exports.updateProfile = async (req, res) => {
 
     // Define allowed fields for each user type
     const allowedFields = {
-      individual: ['username', 'email', 'image', 'role', 'name', 'website', 'phnNumber', 'address', 'socialMedia'],
+      individual: ['username', 'email', 'image', 'role', 'name', 'website', 'companyName', 'phnNumber', 'address', 'socialMedia'],
       enterprise: ['username', 'email', 'image', 'website', 'phnNumber', 'address', 'socialMedia', 'companyName', 'industryType', 'aboutUs'],
       enterpriseEmp: ['username', 'email', 'image', 'role', 'website', 'phnNumber', 'address', 'socialMedia']
     };
