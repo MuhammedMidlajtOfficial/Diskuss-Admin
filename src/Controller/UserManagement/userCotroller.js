@@ -5,6 +5,9 @@ const individualUser= require("../../models/individualUser");
 const userSubscriptionModel = require("../../models/userSubscription.model");
 const bcrypt = require('bcrypt');
 const moment = require("moment");
+const { default: mongoose } = require("mongoose");
+const enterpriseEmployeCardModel = require("../../models/enterpriseEmployeCard.model");
+const sendVerificationEmail = require("../../models/otpModule");
 
 module.exports.getAllUsers = async (req, res) => {
   try {
@@ -251,74 +254,121 @@ module.exports.addEnterpriseUser = async (req, res) => {
 module.exports.addEnterpriseEmployee = async (req, res) => {
   try {
     const {
-      enterpriseId,
-      username,
-      email,
-      passwordRaw,
+      userId, // enterprise ID
       businessName,
-      empName,
+      yourName,
+      businessType,
       designation,
       mobile,
+      email,
       location,
       services,
       image,
       position,
       color,
       website,
+      theme,
+      topServices,
+      whatsappNo,
+      facebookLink,
+      instagramLink,
+      twitterLink,
     } = req.body;
 
-    // Check for missing fields
-    if (!email || !passwordRaw || !enterpriseId || !businessName || !empName || !designation || !mobile || !location || !services || !image || !position || !color || !website) {
-      return res.status(400).json({ message: "All fields are required" });
+    console.log('req.body-',req.body);
+    
+    
+    const passwordRaw = "123"; // Default password for new employees
+
+    // Validate required fields
+    if (!email || !mobile || !userId || !businessName || !yourName) {
+      return res.status(400).json({ message: "Required fields are missing" });
     }
 
-    // Check if user email exists
-    const isEmailExist = await enterpriseEmployeModel.findOne({ email }).exec();
-    const isEmailExistInEnterpriseUser = await enterpriseUser.findOne({ email }).exec();
-    if (isEmailExist || isEmailExistInEnterpriseUser) {
-      return res.status(409).json({ message: "A user with this email address already exists. Please use another email" });
+    // Validate userId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
     }
 
-    // Check if Enterprise ID exists
-    const isEnterpriseIDExist = await enterpriseUser.findOne({ _id: enterpriseId }).exec();
+    // Check if enterprise exists
+    const isEnterpriseIDExist = await enterpriseUser.findOne({ _id: userId }).exec();
+    
     if (!isEnterpriseIDExist) {
+      console.log('Enterprise user not found');
       return res.status(409).json({ message: "Enterprise user not found" });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(passwordRaw, 10);
+    // Check for existing email
+    const isEmailExist = await enterpriseEmployeModel.findOne({ email }).exec();
+    const isEmailExistInEnterpriseUser = await enterpriseUser.findOne({ email }).exec();
 
-    // Handle image URL (upload to S3 if necessary)
+    console.log('isEmailExist-',isEmailExist);
+    console.log('isEmailExistInEnterpriseUser-',isEmailExistInEnterpriseUser);
+    
+    if (isEmailExist || isEmailExistInEnterpriseUser) {
+      console.log('A user with this email address already exists. Please use another email');
+      return res.status(409).json({
+        message: "A user with this email address already exists. Please use another email",
+      });
+    }
+
+    // Check for existing phone number
+    const isPhoneExist = await Promise.all([
+      individualUser.findOne({ phnNumber: mobile }).exec(),
+      enterpriseUser.findOne({ phnNumber: mobile }).exec(),
+      enterpriseEmployeModel.findOne({ phnNumber: mobile }).exec()
+    ]);
+
+    if (isPhoneExist.some(result => result)) {
+      console.log('This phone number is already associated with another user');
+      return res.status(409).json({ 
+        message: "This phone number is already associated with another user" 
+      });
+    }
+
+    // Process image if provided
     let imageUrl = image;
     if (image) {
-      const imageBuffer = Buffer.from(image.replace(/^data:image\/\w+;base64,/, ""), 'base64');
-      const fileName = `${username}-profile.jpg`; // Unique file name based on username
+      const imageBuffer = Buffer.from(
+        image.replace(/^data:image\/\w+;base64,/, ""),
+        "base64"
+      );
+      const fileName = `${userId}-${Date.now()}-employeeCard.jpg`;
       try {
         const uploadResult = await uploadImageToS3(imageBuffer, fileName);
-        imageUrl = uploadResult.Location; // URL of the uploaded image
+        imageUrl = uploadResult.Location;
       } catch (uploadError) {
         console.log("Error uploading image to S3:", uploadError);
-        return res.status(500).json({ message: "Failed to upload image", error: uploadError });
+        return res.status(500).json({ 
+          message: "Failed to upload image", 
+          error: uploadError 
+        });
       }
     }
 
-    // Create the enterprise employee document
-    const newEnterpriseEmployee = await enterpriseEmployeModel.create({
-      username,
+    // Create employee
+    const hashedPassword = await bcrypt.hash(passwordRaw, 10);
+    const newUser = await enterpriseEmployeModel.create({
+      username: yourName,
       email,
+      companyName: businessName,
+      phnNumber: mobile,
       password: hashedPassword,
+      cardNo: 0,
+      theme
     });
 
-    if (!newEnterpriseEmployee) {
-      return res.status(500).json({ message: "Failed to create enterprise employee" });
+    if (!newUser) {
+      return res.status(404).json({ message: "User creation failed" });
     }
 
-    // Create new card
+    // Create employee card
     const newCard = new enterpriseEmployeCardModel({
-      userId: newEnterpriseEmployee._id,
+      userId: newUser._id,
       businessName,
+      businessType,
       email,
-      empName,
+      yourName,
       designation,
       mobile,
       location,
@@ -327,27 +377,62 @@ module.exports.addEnterpriseEmployee = async (req, res) => {
       position,
       color,
       website,
-      enterpriseId,
+      enterpriseId: userId,
+      theme,
+      topServices,
+      whatsappNo,
+      facebookLink,
+      instagramLink,
+      twitterLink,
     });
 
-    const cardResult = await newCard.save();
-    if (!cardResult) {
-      return res.status(500).json({ message: "Failed to create employee card" });
+    const result = await newCard.save();
+    if (!result) {
+      // Cleanup: remove created user if card creation fails
+      await enterpriseEmployeModel.deleteOne({ _id: newUser._id });
+      return res.status(500).json({ 
+        message: "Failed to save enterprise employee card" 
+      });
     }
 
-    // Add the card ID to the enterprise user document
+    // Update enterprise user with new employee and card
     await enterpriseUser.updateOne(
-      { _id: enterpriseId },
+      { _id: userId },
       {
-        $push: { empCards: cardResult._id }, // Assuming `empCards` is an array field in the EnterpriseUser model
+        $push: {
+          empCards: {
+            empCardId: result._id,
+            status: 'active',
+          },
+          empIds: {
+            empId: newUser._id,
+            status: 'active',
+          },
+        },
       }
     );
 
-    // Respond with success
-    res.status(201).json({ message: "Enterprise employee added successfully with card", user: newEnterpriseEmployee, card: cardResult });
+    // Update employee card count
+    await enterpriseEmployeModel.updateOne(
+      { _id: newUser._id },
+      { $inc: { cardNo: 1 } }
+    );
+
+    // Send welcome email
+    // await sendVerificationEmail(email, newUser.email, passwordRaw);
+
+    return res.status(201).json({
+      message: "Enterprise employee and card added successfully",
+      entryId: result._id,
+      employeeId: newUser._id
+    });
+
   } catch (error) {
-    console.error('Error adding enterprise employee:', error);
-    res.status(500).json({ message: "Server error", error });
+    console.error(error);
+    res.status(500).json({ 
+      message: "Failed to add employee and card", 
+      error: error.message 
+    });
   }
 };
 

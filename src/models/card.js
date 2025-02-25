@@ -9,6 +9,10 @@ const cardSchema = new mongoose.Schema({
     type:String,
     required : true
   },
+  businessType: {
+    type:String,
+    required : true
+  },
   yourName:  {
     type:String,
     required : true
@@ -35,7 +39,7 @@ const cardSchema = new mongoose.Schema({
   } ], 
   image:  {
     type:String,
-    required : true
+    default:''
   },       
   position:  {
     type:String,
@@ -52,9 +56,39 @@ const cardSchema = new mongoose.Schema({
   },
   website:  {
     type:String,
-    required : true
+    // required : true
+    default:''
   },
-  
+  theme:{
+    type:String,
+    default:'01',
+    required:true
+  },
+  topServices: [ {
+    type:String,
+    max:5,
+    required:true
+  } ],
+    whatsappNo: {
+      type: Number,
+      default: "",
+    },
+    facebookLink: {
+      type: String,
+      default: "",
+    },
+    instagramLink: {
+      type: String,
+      default: "",
+    },
+    twitterLink: {
+      type: String,
+      default: "",
+    },
+    status:{
+      type:String,
+      default : 'active'
+    },
 },{ timestamps:true });
 
 module.exports = mongoose.model("Card", cardSchema);
