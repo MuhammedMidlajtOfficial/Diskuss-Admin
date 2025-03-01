@@ -35,7 +35,6 @@ const EnterpriseEmployeeCardSchema = new mongoose.Schema({
   },
   location:  {
     type:String,
-    required : true,
     default:''
   },
   services: [ {
