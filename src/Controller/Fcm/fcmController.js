@@ -252,6 +252,69 @@ exports.sendMeetingNotification = async (req, res) => {
   }
 };
 
+exports.sendContactNotification = async (req, res) => {
+  const { userIds, notification } = req.body;
+
+  try {
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ error: "No userIds provided." });
+    }
+
+    const uniqueUserIds = [...new Set(userIds)]; // Remove duplicate user IDs
+
+    const notifications = await Promise.all(
+      uniqueUserIds.map(async (userId) => {
+        try {
+          // Fetch all FCM tokens for the user
+          const fcmDataList = await fcmCollection.find({ userId });
+
+          if (!fcmDataList || fcmDataList.length === 0) {
+            console.error(`No FCM tokens found for userId: ${userId}`);
+            return null;
+          }
+
+          console.log(`FCM Data for userId ${userId}:`, fcmDataList);
+
+          // Prepare and send notifications to all tokens
+          const sendPromises = fcmDataList.map(async (fcmData) => {
+            const message = {
+              notification: {
+                title: notification.title,
+                body: notification.body,
+              },
+              data: {
+                notificationType: `${fcmData.userType}-contact`,
+              },
+              token: fcmData.fcmId,
+            };
+            try {
+              const response = await admin.messaging().send(message);
+              console.log(`Notification sent to token: ${fcmData.fcmId}`, response);
+              return response;
+            } catch (sendError) {
+              console.error(
+                `Error sending notification to token: ${fcmData.fcmId}`,
+                sendError.message
+              );
+              return null;
+            }
+          });
+
+          // Await all send operations for the current userId
+          return await Promise.all(sendPromises);
+        } catch (error) {
+          console.error(`Error processing userId: ${userId}`, error.message);
+          return null;
+        }
+      })
+    );
+
+    res.status(200).json({ message: "Contact notifications sent.", details: notifications });
+  } catch (error) {
+    console.error("Error sending contact notifications:", error.message);
+    res.status(500).json({ error: "Failed to send contact notifications." });
+  }
+};
 
 //Handle Login
 exports.handleLogin = async (req, res) => {
