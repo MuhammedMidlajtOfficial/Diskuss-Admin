@@ -29,7 +29,7 @@ exports.handleSubscription = async (req, res) => {
         },
         token: fcmId, // Send to specific FCM ID
       };
-console.log("mes:",message);
+      console.log("mes:",message);
 
       // Send the notification
       const response = await admin.messaging().send(message);

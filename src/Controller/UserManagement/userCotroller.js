@@ -459,8 +459,10 @@ module.exports.changeUserStatus = async (req, res) => {
       // Toggle status for enterpriseEmployee
       if (enterpriseEmployeeExist.status === "active") {
         await enterpriseEmployeModel.updateOne({ _id: userId }, { status: "inactive" });
+        await enterpriseEmployeCardModel.updateOne({ userId }, { status: "inactive" });
       } else if (enterpriseEmployeeExist.status === "inactive") {
         await enterpriseEmployeModel.updateOne({ _id: userId }, { status: "active" });
+        await enterpriseEmployeCardModel.updateOne({ userId }, { status: "active" });
       }
       console.log('Enterprise employee status updated');
       return res.status(200).json({ message: `Enterprise employee status updated` });
