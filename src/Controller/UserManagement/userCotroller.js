@@ -38,11 +38,24 @@ module.exports.getAllUsers = async (req, res) => {
 
       // Add subscription details to each user
       for (const user of users) {
-        const subscription = await userSubscriptionModel.findOne({ userId: user._id })
+        let subscription = await userSubscriptionModel.findOne({ userId: user._id, status:'active' })
           .populate('planId') // Populate plan details
           .lean();
+        if(!subscription){
+          subscription = await userSubscriptionModel.findOne({ userId: user._id })
+          .populate('planId') // Populate plan details
+          .lean();
+        }
+        
+        // console.log('user--', user);
         // console.log('subscription--', subscription);
-        user.subscriptionPlan = subscription ? subscription?.planId?.name : null;
+        if(subscription === null){
+          // DO nothing 
+        }else if (subscription.status === 'free') {
+          user.subscriptionPlan = "Free Plan"
+        }else{
+          user.subscriptionPlan = subscription ? subscription?.planId?.name : null;
+        }
       }
       return users;
     };
