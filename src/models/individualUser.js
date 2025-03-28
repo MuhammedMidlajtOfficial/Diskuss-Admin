@@ -94,7 +94,7 @@ const IndividualUserSchema = new mongoose.Schema({
     coinsWithdrawn: { type: Number, default: 0 },
     coinsPending: { type: Number, default: 0 },
     invitedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Referral' }],
-    isDeleted : {type: Boolean, default: false}
+    isDeleted : {type: Boolean, default: false},
 
   
     meetings: [
