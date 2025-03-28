@@ -132,11 +132,17 @@ module.exports.addIndividualUser = async (req,res) =>{
       return res.status(400).json({ message :"username,email and password are required"}); // Correct response handling
     }
 
-    // Check if email exists
-    const isEmailExist = await individualUser.findOne({ email }).exec();
-    if (isEmailExist) {
-      return res.status(409).json({ message :"A user with this email address already exists. Please login instead"}); // Correct response handling
+    // Check if email or phone number exists in any model
+    const existingUser = await Promise.all([
+      individualUser.findOne({ $or: [{ email }, { phnNumber }] }).exec(),
+      enterpriseUser.findOne({ $or: [{ email }, { phnNumber }] }).exec(),
+      enterpriseEmployeModel.findOne({ $or: [{ email }, { phnNumber }] }).exec()
+    ]);
+
+    if (existingUser.some(user => user)) {
+      return res.status(409).json({ message: "A user with this email or phone number already exists. Please login instead" });
     }
+
 
     let imageUrl ;
 
@@ -206,16 +212,15 @@ module.exports.addEnterpriseUser = async (req, res) => {
       return res.status(400).json({ message: "Company name, industry type, email, and password are required" });
     }
 
-    // Check if email exists in the enterpriseUser collection
-    const isEmailExist = await enterpriseUser.findOne({ email }).exec();
-    if (isEmailExist) {
-      return res.status(409).json({ message: "An enterprise user with this email address already exists." });
-    }
+    // Check if email or phone number exists in any model
+    const existingUser = await Promise.all([
+      individualUser.findOne({ $or: [{ email }, { phnNumber }] }).exec(),
+      enterpriseUser.findOne({ $or: [{ email }, { phnNumber }] }).exec(),
+      enterpriseEmployeModel.findOne({ $or: [{ email }, { phnNumber }] }).exec()
+    ]);
 
-    // Check if email exists in the enterpriseEmployeModel collection
-    const isEmpEmailExist = await enterpriseEmployeModel.findOne({ email }).exec();
-    if (isEmpEmailExist) {
-      return res.status(409).json({ message: "This email address is already associated with an enterprise employee." });
+    if (existingUser.some(user => user)) {
+      return res.status(409).json({ message: "A user with this email or phone number already exists. Please login instead" });
     }
 
     let imageUrl;
