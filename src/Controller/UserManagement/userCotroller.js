@@ -212,17 +212,24 @@ module.exports.addEnterpriseUser = async (req, res) => {
       return res.status(400).json({ message: "Company name, industry type, email, and password are required" });
     }
 
-    // Check if email or phone number exists in any model
-    const existingUser = await Promise.all([
-      individualUser.findOne({ $or: [{ email }, { phnNumber }] }).exec(),
-      enterpriseUser.findOne({ $or: [{ email }, { phnNumber }] }).exec(),
-      enterpriseEmployeModel.findOne({ $or: [{ email }, { phnNumber }] }).exec()
-    ]);
-
-    if (existingUser.some(user => user)) {
-      return res.status(409).json({ message :"A user with this email  address or Phone number already exists. Please login instead"}); // Correct response handling
+    // Check if email exists in the enterpriseUser collection
+    const isEmailExist = await enterpriseUser.findOne({$or: [{ email }, { phnNumber }] }).exec();
+    if (isEmailExist) {
+      return res.status(409).json({ message: "An enterprise user with this email address already exists." });
     }
 
+    // Check if email exists in the enterpriseEmployeModel collection
+    const isEmpEmailExist = await enterpriseEmployeModel.findOne({ $or: [{ email }, { phnNumber }]  }).exec();
+    if (isEmpEmailExist) {
+      return res.status(409).json({ message: "This email address is already associated with an enterprise employee." });
+    }
+
+    // Check if email exists in the individualUser collection
+      const isindividualEmailExist = await enterpriseEmployeModel.findOne({ $or: [{ email }, { phnNumber }]  }).exec();
+      if (isindividualEmailExist) {
+        return res.status(409).json({ message: "This email address is already associated with an individual user." });
+      }
+    
     let imageUrl;
 
     // Upload image to S3 if a new image is provided
