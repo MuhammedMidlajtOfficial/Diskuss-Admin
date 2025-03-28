@@ -140,7 +140,7 @@ module.exports.addIndividualUser = async (req,res) =>{
     ]);
 
     if (existingUser.some(user => user)) {
-     return res.status(409).json({ message :"A user with this email address already exists. Please login instead"}); // Correct response handling
+     return res.status(409).json({ message :"A user with this email  address or Phone number already exists. Please login instead"}); // Correct response handling
     }
 
 
@@ -220,7 +220,7 @@ module.exports.addEnterpriseUser = async (req, res) => {
     ]);
 
     if (existingUser.some(user => user)) {
-      return res.status(409).json({ message :"A user with this email address already exists. Please login instead"}); // Correct response handling
+      return res.status(409).json({ message :"A user with this email  address or Phone number already exists. Please login instead"}); // Correct response handling
     }
 
     let imageUrl;
