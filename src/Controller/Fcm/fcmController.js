@@ -245,14 +245,14 @@ exports.sendMeetingNotification = async (req, res) => {
                 console.log(`✅ Notification sent to user ${userId} (${fcmData.userType}) with token: ${fcmData.fcmId.substring(0, 10)}...`);
                 return { success: true, messageId: response };
               } catch (sendError) {
-                console.error(`❌ Error sending to token ${fcmData.fcmId.substring(0, 10)}...`, sendError.message);
+                console.error(`❌ Error sending to token ${fcmData.fcmId}`, sendError.message);
                 
                 // Clean up invalid tokens
                 if (sendError.code === 'messaging/invalid-registration-token' || 
                     sendError.code === 'messaging/registration-token-not-registered') {
                   try {
                     // await fcmCollection.deleteOne({ fcmId: fcmData.fcmId });
-                    console.log(`🧹 Removed invalid token: ${fcmData.fcmId.substring(0, 10)}...`);
+                    console.log(`🧹 Removed invalid token: ${fcmData.fcmId}`);
                   } catch (deleteError) {
                     console.error(`Failed to delete invalid token: ${deleteError.message}`);
                   }
