@@ -188,6 +188,49 @@ exports.sendMessageNotification = async (req, res) => {
   }
 };
 
+exports.sendAdminNotification = async (req, res) => {
+  const { content, userType, image, video } = req.body;
+
+  if (!["individual", "enterprise", "employee"].includes(userType)) {
+    return res.status(400).json({ error: "Invalid user type" });
+  }
+
+  try {
+    const fcmDataList = await fcmCollection.find({ userType });
+
+    if (!fcmDataList || fcmDataList.length === 0) {
+      return res.status(404).json({ error: "No users found for this user type." });
+    }
+
+    const messages = fcmDataList.map((fcmData) => ({
+      notification: {
+        title: "Know Connection - New Announcement",
+        body: content,
+        imageUrl: image || "",
+      },
+      data: {
+        videoUrl: video || "",
+        notificationType: `${userType}-message`,
+      },
+      token: fcmData.fcmId,
+    }));
+
+    const sendPromises = messages.map((msg) => admin.messaging().send(msg));
+    const response = await Promise.all(sendPromises);
+
+    console.log("Admin notification sent:", response);
+
+    return res.status(200).json({
+      message: "Admin notification sent successfully.",
+      notificationResponse: response,
+    });
+
+  } catch (error) {
+    console.error("Error sending admin notification:", error.message || error);
+    res.status(500).json({ error: "Failed to send admin notification.", details: error.message });
+  }
+};
+
 exports.sendMeetingNotification = async (req, res) => {
   const { userIds, notification } = req.body;
 
