@@ -202,18 +202,25 @@ exports.sendAdminNotification = async (req, res) => {
       return res.status(404).json({ error: "No users found for this user type." });
     }
 
-    const messages = fcmDataList.map((fcmData) => ({
-      notification: {
+    const messages = fcmDataList.map((fcmData) => {
+      let notificationPayload = {
         title: "Know Connection - New Announcement",
         body: content,
-        imageUrl: image || "",
-      },
-      data: {
-        videoUrl: video || "",
-        notificationType: `${userType}-message`,
-      },
-      token: fcmData.fcmId,
-    }));
+      };
+
+      if (image) {
+        notificationPayload.imageUrl = image;
+      }
+
+      return {
+        notification: notificationPayload,
+        data: {
+          videoUrl: video || "",
+          notificationType: `${userType}-message`,
+        },
+        token: fcmData.fcmId,
+      };
+    });
 
     const sendPromises = messages.map((msg) => admin.messaging().send(msg));
     const response = await Promise.all(sendPromises);
