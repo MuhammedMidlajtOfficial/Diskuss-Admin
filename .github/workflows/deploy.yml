@@ -1,9 +1,9 @@
-name: Deploy to EC2
+name: Deploy to EC2 Development
 
 on:
   push:
     branches:
-      - main
+      - development
 
 jobs:
   deploy:
@@ -20,7 +20,7 @@ jobs:
 
     - name: SSH into EC2 and Deploy
       run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@13.203.24.247 << 'EOF'
+        ssh -o StrictHostKeyChecking=no ec2-user@3.7.254.117 << 'EOF'
           cd ~/Diskuss-Admin
           git pull origin main
           npm install
