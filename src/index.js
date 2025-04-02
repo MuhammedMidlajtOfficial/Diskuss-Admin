@@ -8,7 +8,7 @@ const { sendNotificationsForOldRecords, notifyIncompleteContacts } = require("./
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
-app.use('/api', (req,res) => {
+app.get('/api', (req,res) => {
     res.json("Welcom to KC Admin API");
 });
 app.use("/api/v1", router)
