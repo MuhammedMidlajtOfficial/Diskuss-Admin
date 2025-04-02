@@ -22,7 +22,7 @@ jobs:
       run: |
         ssh -o StrictHostKeyChecking=no ec2-user@3.7.254.117 << 'EOF'
           cd ~/Diskuss-Admin
-          git pull origin main
+          git pull origin development
           npm install
           pm2 restart KC-admin-dev 
         EOF
