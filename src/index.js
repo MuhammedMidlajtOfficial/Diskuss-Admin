@@ -35,7 +35,7 @@ cron.schedule("0 */12 * * *", () => {
 const PORT = process.env.PORT || 3000
 connectDB.then(() => {
   app.listen(PORT, () => {
-    console.log(`Development server started running on port: ${PORT}`);
+    console.log(`KC Admin Development server started running on port: ${PORT}`);
     
   });
 });
