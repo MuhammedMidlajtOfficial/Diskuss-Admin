@@ -8,9 +8,6 @@ const { sendNotificationsForOldRecords, notifyIncompleteContacts } = require("./
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
-app.get('/api', (req,res) => {
-    res.json("Welcom to KC Admin API");
-});
 app.use("/api/v1", router)
 
 
@@ -38,6 +35,7 @@ cron.schedule("0 */12 * * *", () => {
 const PORT = process.env.PORT || 3000
 connectDB.then(() => {
   app.listen(PORT, () => {
-    console.log(`Server started running on port: ${PORT}`);
+    console.log(`Development server started running on port: ${PORT}`);
+    
   });
 });
