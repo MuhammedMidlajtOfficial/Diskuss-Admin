@@ -202,25 +202,33 @@ exports.sendAdminNotification = async (req, res) => {
       return res.status(404).json({ error: "No users found for this user type." });
     }
 
-    const messages = fcmDataList.map((fcmData) => {
-      let notificationPayload = {
-        title: "Know Connection - New Announcement",
-        body: content,
-      };
+    const messages = fcmDataList
+      .map((fcmData) => {
+        if (!fcmData.fcmId) return null;
 
-      if (image) {
-        notificationPayload.imageUrl = image;
-      }
+        let notificationPayload = {
+          title: "Know Connection - New Announcement",
+          body: content,
+        };
 
-      return {
-        notification: notificationPayload,
-        data: {
-          videoUrl: video || "",
-          notificationType: `${userType}-message`,
-        },
-        token: fcmData.fcmId,
-      };
-    });
+        if (image) {
+          notificationPayload.imageUrl = image;
+        }
+
+        return {
+          token: fcmData.fcmId,
+          notification: notificationPayload,
+          data: {
+            videoUrl: video || "",
+            notificationType: `${userType}-message`,
+          },
+        };
+      })
+      .filter((msg) => msg !== null && msg.token);
+
+    if (messages.length === 0) {
+      return res.status(404).json({ error: "No valid FCM tokens found." });
+    }
 
     const sendPromises = messages.map((msg) => admin.messaging().send(msg));
     const response = await Promise.all(sendPromises);
