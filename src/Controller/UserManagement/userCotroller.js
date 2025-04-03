@@ -24,11 +24,11 @@ module.exports.getAllUsers = async (req, res) => {
       const searchRegex = new RegExp(searchQuery, 'i'); // Create a case-insensitive search regex
       const users = await model
         .find({
+          isDeleted: false,
           $or: [
             { username: { $regex: searchRegex } },
             { email: { $regex: searchRegex } },
             { name: { $regex: searchRegex } },
-            { isDeleted: true }
             // Add other fields as necessary for the search
           ],
         })
@@ -63,31 +63,31 @@ module.exports.getAllUsers = async (req, res) => {
 
     if (filter === 'individualUser') {
       totalCount = await individualUser.countDocuments({
+        isDeleted: false,
         $or: [
           { username: { $regex: search, $options: 'i' } },
           { email: { $regex: search, $options: 'i' } },
           { name: { $regex: search, $options: 'i' } },
-          { isDeleted: true }
         ],
       });
       totalUser = await fetchUsersWithSubscription(individualUser, search);
     } else if (filter === 'enterpriseUser') {
       totalCount = await enterpriseUser.countDocuments({
+        isDeleted: false,
         $or: [
           { username: { $regex: search, $options: 'i' } },
           { email: { $regex: search, $options: 'i' } },
           { name: { $regex: search, $options: 'i' } },
-          { isDeleted: true }
         ],
       });
       totalUser = await fetchUsersWithSubscription(enterpriseUser, search);
     } else if (filter === 'enterpriseEmploye') {
       totalCount = await enterpriseEmployeModel.countDocuments({
+        isDeleted: false,
         $or: [
           { username: { $regex: search, $options: 'i' } },
           { email: { $regex: search, $options: 'i' } },
           { name: { $regex: search, $options: 'i' } },
-          { isDeleted: true }
         ],
       });
       totalUser = await fetchUsersWithSubscription(enterpriseEmployeModel, search);
