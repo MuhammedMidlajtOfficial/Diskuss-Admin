@@ -28,6 +28,7 @@ module.exports.getAllUsers = async (req, res) => {
             { username: { $regex: searchRegex } },
             { email: { $regex: searchRegex } },
             { name: { $regex: searchRegex } },
+            { isDeleted: true }
             // Add other fields as necessary for the search
           ],
         })
@@ -66,6 +67,7 @@ module.exports.getAllUsers = async (req, res) => {
           { username: { $regex: search, $options: 'i' } },
           { email: { $regex: search, $options: 'i' } },
           { name: { $regex: search, $options: 'i' } },
+          { isDeleted: true }
         ],
       });
       totalUser = await fetchUsersWithSubscription(individualUser, search);
@@ -75,6 +77,7 @@ module.exports.getAllUsers = async (req, res) => {
           { username: { $regex: search, $options: 'i' } },
           { email: { $regex: search, $options: 'i' } },
           { name: { $regex: search, $options: 'i' } },
+          { isDeleted: true }
         ],
       });
       totalUser = await fetchUsersWithSubscription(enterpriseUser, search);
@@ -84,6 +87,7 @@ module.exports.getAllUsers = async (req, res) => {
           { username: { $regex: search, $options: 'i' } },
           { email: { $regex: search, $options: 'i' } },
           { name: { $regex: search, $options: 'i' } },
+          { isDeleted: true }
         ],
       });
       totalUser = await fetchUsersWithSubscription(enterpriseEmployeModel, search);
