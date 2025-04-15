@@ -525,7 +525,9 @@ module.exports.getUserById = async (req, res) => {
     // Check if the user exists in the IndividualUser collection
     const individualUserExist = await individualUser.findById(userId);
     if (individualUserExist) {
-      const subscription = await userSubscriptionModel.findOne({ userId: individualUserExist._id }).select("planId").populate("planId").exec()
+      const subscription = await userSubscriptionModel.findOne({ userId: individualUserExist._id, status:"active" }).select("planId").populate("planId").exec()
+      // console.log('subscription-',subscription);
+      
       return res.status(200).json({ userData: individualUserExist, userType: 'individual', subscription });
     }
 
