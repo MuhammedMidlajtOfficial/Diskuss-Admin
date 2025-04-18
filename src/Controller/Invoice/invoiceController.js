@@ -38,9 +38,11 @@ async function getInvoices(req, res) {
 
       .populate({ path: "userId", select: ["username", "email","phnNumber"] }); // Include user name and email
 
+      console.log('invoice-',invoices);
+      
     // Mapping through the invoices and ensuring all required fields are included
     const formattedInvoices = invoices.map((invoice) => ({
-      invoiceNumber: invoice._id, 
+      invoiceNumber: invoice.invoiceNumber, 
       userId: invoice.userId?._id || "unknown", 
       username: invoice.userId?.username || "unknown", // This should be static 
       userEmail: invoice.userId?.email || "unknown", // This should be static 
