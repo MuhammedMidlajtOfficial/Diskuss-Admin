@@ -42,7 +42,7 @@ async function getInvoices(req, res) {
       
     // Mapping through the invoices and ensuring all required fields are included
     const formattedInvoices = invoices.map((invoice) => ({
-      invoiceNumber: invoice.invoiceNumber, 
+      invoiceNumber: invoice?.invoiceNumber || "unknown", 
       userId: invoice.userId?._id || "unknown", 
       username: invoice.userId?.username || "unknown", // This should be static 
       userEmail: invoice.userId?.email || "unknown", // This should be static 
