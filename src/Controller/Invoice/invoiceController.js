@@ -41,25 +41,25 @@ async function getInvoices(req, res) {
       console.log('invoice-',invoices);
       
     // Mapping through the invoices and ensuring all required fields are included
-    const formattedInvoices = invoices.map((invoice) => (
-      {
-      invoiceNumber: invoice?.invoiceNumber || "unknown",
-      userId: invoice.userId?._id || "unknown", 
-      username: invoice.userId?.username || "unknown", // This should be static 
-      userEmail: invoice.userId?.email || "unknown", // This should be static 
-      contact:invoice.userId?.phnNumber || "unknown",
-      planId: invoice.planId?._id || "unknown", 
-      planName: invoice.planId?.name || "unknown", 
-      razorpayOrderId: invoice.razorpayOrderId || "unknown", 
-      amount: invoice.planId?.price || "unknown", // Default value if amount is not in the model
+    // const formattedInvoices = invoices.map((invoice) => (
+    //   {
+    //   invoiceNumber: invoice?.invoiceNumber || "unknown",
+    //   userId: invoice.userId?._id || "unknown", 
+    //   username: invoice.userId?.username || "unknown", // This should be static 
+    //   userEmail: invoice.userId?.email || "unknown", // This should be static 
+    //   contact:invoice.userId?.phnNumber || "unknown",
+    //   planId: invoice.planId?._id || "unknown", 
+    //   planName: invoice.planId?.name || "unknown", 
+    //   razorpayOrderId: invoice.razorpayOrderId || "unknown", 
+    //   amount: invoice.planId?.price || "unknown", // Default value if amount is not in the model
 
-      paymentMethod: invoice.payment?.[0] || "unknown", // Payment method from payment array (unknown type)
-      paymentDate: invoice.createdAt || "unknown", // CreatedAt from timestamps
-      subscriptionStartDate: invoice.startDate || "unknown", 
-      subscriptionEndDate: invoice.endDate || "unknown", 
-      status: invoice.status || "active", // Default status if not available in the model
+    //   paymentMethod: invoice.payment?.[0] || "unknown", // Payment method from payment array (unknown type)
+    //   paymentDate: invoice.createdAt || "unknown", // CreatedAt from timestamps
+    //   subscriptionStartDate: invoice.startDate || "unknown", 
+    //   subscriptionEndDate: invoice.endDate || "unknown", 
+    //   status: invoice.status || "active", // Default status if not available in the model
 
-    }));
+    // }));
     // console.log('formattedInvoices',formattedInvoices);
     
 
@@ -68,7 +68,7 @@ async function getInvoices(req, res) {
       success: true,
       totalInvoices: totalInvoices,
 
-      invoices: formattedInvoices,
+      invoices: invoices,
     });
   } catch (error) {
     console.error("Error fetching invoices:", error.message);
